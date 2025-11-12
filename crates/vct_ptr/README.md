@@ -1,19 +1,19 @@
 # V-Craft Pointer
 
-> Inspired by [bevy_ptr](https://github.com/bevyengine/bevy/blob/main/crates/bevy_ptr/README.md).
+> 参考 [bevy_ptr](https://github.com/bevyengine/bevy/blob/main/crates/bevy_ptr/README.md).
 
-This crate provides several thin wrappers around Rust standard pointers that are used frequently in the ECS modules.
+本库在 Rust 标准指针的基础上实现了一些额外的指针封装，它们将在 ECS 模块中被频繁使用。
 
-A pointer that is safe to use should satisfy the following:
+一个安全的指针应该满足以下条件：
 
-- The pointer is non-null (not a zero value).
-- The pointer refers to an address within a valid region (stack or heap).
-- The pointer points to an initialized instance of `T`.
-- The pointer meets the alignment requirements.
-- The lifetime associated with the pointer is valid for the pointed-to instance.
-- Rust aliasing rules are respected: at any time there is either one mutable borrow or any number of immutable borrows.
+- 非空（非零值）
+- 指向有效区间（栈区或堆区）
+- 指向的目标对象已初始化
+- 满足对齐要求
+- 携带的生命周期标识对目标有效
+- 满足 Rust 别名规则：任何时刻仅有一个可变引用或任意个不可变引用
 
-## Standard Pointers
+## 标准库指针
 
 |Pointer Type       |Lifetime'ed|Mutable|Strongly Typed|Aligned|Not Null|Forbids Aliasing|Forbids Arithmetic|
 |-------------------|-----------|-------|--------------|-------|--------|----------------|------------------|
@@ -27,23 +27,30 @@ A pointer that is safe to use should satisfy the following:
 |`*const ()`        |No         |No     |No            |No     |No      |No              |No                |
 |`*mut ()`          |No         |Yes    |No            |No     |No      |No              |No                |
 
-## Available in this project
+## 本库提供的额外指针
 
 |Pointer Type         |Lifetime'ed|Mutable|Strongly Typed|Aligned|Not Null|Forbids Aliasing|Forbids Arithmetic|
 |---------------------|-----------|-------|--------------|-------|--------|----------------|------------------|
 |`ConstNonNull<T>`    |No         |No     |Yes           |No     |Yes     |No              |Yes               |
 |`Ptr<'a>`            |Yes        |No     |No            |Maybe  |Yes     |No              |No                |
 |`PtrMut<'a>`         |Yes        |Yes    |No            |Maybe  |Yes     |Yes             |No                |
-|`ManualPtr<'a>`      |Yes        |Yes    |No            |Maybe  |Yes     |Yes             |No                |
-|`AutoPtr<'a, T>`     |Yes        |Yes    |Yes           |Maybe  |Yes     |Yes             |Yes               |
+|`OwningPtr<'a>`      |Yes        |Yes    |No            |Maybe  |Yes     |Yes             |No                |
+|`MovingPtr<'a, T>`   |Yes        |Yes    |Yes           |Maybe  |Yes     |Yes             |Yes               |
 |`ThinSlicePtr<'a, T>`|Yes        |No     |Yes           |Yes    |Yes     |Yes             |Yes               |
 
-`ConstNonNull<T>` is similar to `NonNull<T>`, but it cannot be converted into a pointer that allows mutating the target.
+`ConstNonNull<T>` 类似于 `NonNull<T>`，它是非空的常量指针，无法直接转换成可修改目标的类型（如可变引用）。
 
-`Ptr<'a>` and `PtrMut<'a>` are like `NonNull<()>` but carry a lifetime and support alignment checks to approximate the safety semantics of `&T` and `&mut T`.
+`Ptr<'a>` 和 `PtrMut<'a>` 类似于类型擦除的 `&T` 和 `&mut T` 。与裸指针相比，它们添加了生命周期标识并支持指针对齐检查，以尽可能接近引用的安全性。
 
-`ManualPtr<'a>`—the name references `ManuallyDrop`—gives manual control over calling `Drop::drop`. Holding a `ManualPtr` without acting on it does not affect the pointed object; you can optionally consume it with a `make` function (to run/destruct the object) or call `drop_as` to invoke the target's `drop` early. (This corresponds to bevy_ptr's `OwningPtr`, though the name "Owning" can be misleading since it does not allocate or free memory.)
+`OwningPtr<'a>` 字面意思是“所有权指针”，你可以通过此指针消耗指向的目标或执行它的 `Drop::drop` 函数，类似 `&'a mut ManuallyDrop<dyn Any>`。
+需要注意，它并不管理目标的内存资源，因此通常用于指向栈区对象或 `Vec` 等容器管理的对象。
+存在此指针对象时不应该通过其他方式操作目标，即遵守 Rust 的别名规则。
 
-`ManualPtr<'a>` is untyped so it cannot automatically call `drop`. `AutoPtr<'a, T>` is a typed version of `ManualPtr<'a>` and will, by default, call the pointed object's `drop` when it itself is dropped. (This matches bevy_ptr's `MovingPtr`; the term "Moving" is used there because it’s often used to cheaply "move" large objects—`Auto` parallels `ManuallyDrop`.)
+`MovingPtr<'a, T>` 则更进一步，它携带了类型信息，因此在指针自身消亡时会自动执行目标的 `drop` 函数。
+将其取名为 `Moving` 是因为此指针通常用于廉价“移动”大对象（参考C++的移动语义）。
 
-`ThinSlicePtr` is a slice type without length metadata. It is lighter-weight but cannot perform bounds checks; element access is unsafe. (In debug builds it retains length information for checks.)
+> 大对象通常是一个小内存对象指向一个大内存对象，小对象的 `drop` 函数负责释放大对象。
+> 我们使用 `MovingPtr` 指向这个小对象并托管它 `drop` 函数，移动数据时只需拷贝这小块内存。
+
+`ThinSlicePtr` 是一个薄切片指针，它的特点是不包含切片的长度信息（只含一个指针），因此更加轻量。
+但缺点是通过它访问元素是不安全的，无法进行边界检查（Debug模式将保留长度信息以方便调试）。
