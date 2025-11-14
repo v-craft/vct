@@ -3,6 +3,7 @@
 #![no_std]
 #![expect(unsafe_code, reason = "Raw pointers are inherently unsafe.")]
 
+// 测试环境需使用 alloc 容器
 #[cfg(test)]
 #[macro_use]
 extern crate alloc;
@@ -17,24 +18,20 @@ use core::{
     ptr::{self, NonNull},
 };
 
-/// 一个只读版本的 [`NonNull<T>`] 。
+/// 一个只读版本的 [`NonNull<T>`] ,只能直接获取不可变引用
 #[repr(transparent)]
 pub struct ConstNonNull<T: ?Sized>(NonNull<T>);
 
 impl<T: ?Sized> ConstNonNull<T> {
     /// 如果 `ptr` 非空，创建一个新的 `ConstNonNull` 对象。
     ///
-    /// # Examples
-    ///
+    /// # 例
+    /// 
     /// ```
     /// use vct_ptr::ConstNonNull;
     ///
     /// let x = 0u32;
-    /// let ptr = ConstNonNull::<u32>::new(&raw const x).expect("ptr is null!");
-    ///
-    /// if let Some(ptr) = ConstNonNull::<u32>::new(core::ptr::null()) {
-    ///     unreachable!();
-    /// }
+    /// let ptr = ConstNonNull::new(&raw const x).expect("ptr is null!");
     /// ```
     #[inline]
     pub const fn new(ptr: *const T) -> Option<Self> {
@@ -46,24 +43,17 @@ impl<T: ?Sized> ConstNonNull<T> {
         }
     }
 
-    /// 创建一个新 `ConstNonNull`  对象。
+    /// 创建一个新 `ConstNonNull`  对象
+    /// 
+    /// 不检查，但使用空指针是未定义行为 ⚠️
     ///
-    /// # Examples
+    /// # 例
     ///
     /// ```
     /// use vct_ptr::ConstNonNull;
     ///
     /// let x = 0u32;
     /// let ptr = unsafe { ConstNonNull::new_unchecked(&raw const x) };
-    /// ```
-    ///
-    /// 错误用法：
-    ///
-    /// ```rust,no_run
-    /// use vct_ptr::ConstNonNull;
-    ///
-    /// // 空指针是未定义行为 ⚠️
-    /// let ptr = unsafe { ConstNonNull::<u32>::new_unchecked(core::ptr::null()) };
     /// ```
     #[inline]
     pub const unsafe fn new_unchecked(ptr: *const T) -> Self {
@@ -72,17 +62,14 @@ impl<T: ?Sized> ConstNonNull<T> {
 
     /// 返回指针指向对象的不可变引用
     ///
-    /// # 安全性
-    ///
-    /// 调用此方法时需要遵守以下规则:
-    ///
-    /// - 指针必须满足[对齐要求]。
+    /// # 安全性要求
+    /// - 指针需要正确[对齐]。
     /// - 指针指向的对象已经正确初始化。
     /// - 遵守 Rust 的别名规则，同一时刻只能存在一个可变引用或任意个不可变引用。
     ///
     /// 即使未使用返回的引用，也应该遵守这些规则。
     ///
-    /// # Examples
+    /// # 例
     ///
     /// ```
     /// use vct_ptr::ConstNonNull;
@@ -94,7 +81,7 @@ impl<T: ?Sized> ConstNonNull<T> {
     /// println!("{ref_x}");
     /// ```
     ///
-    /// [对齐要求]: https://doc.rust-lang.org/std/ptr/index.html#alignment
+    /// [对齐]: https://doc.rust-lang.org/std/ptr/index.html#alignment
     #[inline]
     pub const unsafe fn as_ref<'a>(&self) -> &'a T {
         unsafe { self.0.as_ref() }
@@ -122,18 +109,19 @@ impl<'a, T: ?Sized> From<&'a mut T> for ConstNonNull<T> {
     }
 }
 
-/// 此类型用于 [`Ptr`]、 [`PtrMut`]、 [`OwningPtr`] 和 [`MovingPtr`] ，表示满足[对齐要求]。
+/// 此类型用于 [`Ptr`]、 [`PtrMut`]、 [`OwningPtr`] 和 [`MovingPtr`] ，表示指针满足[正确对齐]。
 ///
-/// [对齐要求]: https://doc.rust-lang.org/std/ptr/index.html#alignment
+/// [正确对齐]: https://doc.rust-lang.org/std/ptr/index.html#alignment
 #[derive(Debug, Copy, Clone)]
 pub struct Aligned;
 
-/// 此类型用于 [`Ptr`]、 [`PtrMut`]、 [`OwningPtr`] 和 [`MovingPtr`] ，表示不满足[对齐要求]。
+/// 此类型用于 [`Ptr`]、 [`PtrMut`]、 [`OwningPtr`] 和 [`MovingPtr`] ，表示指针不满足[正确对齐]。
 ///
-/// [对齐要求]: https://doc.rust-lang.org/std/ptr/index.html#alignment
+/// [正确对齐]: https://doc.rust-lang.org/std/ptr/index.html#alignment
 #[derive(Debug, Copy, Clone)]
 pub struct Unaligned;
 
+// 用于封装 trait ，禁止外部库进行实现
 mod seal_aligned {
     pub trait Sealed {}
     impl Sealed for super::Aligned {}
@@ -150,7 +138,7 @@ pub trait IsAligned: seal_aligned::Sealed {
 impl IsAligned for Aligned {
     #[inline]
     unsafe fn read_ptr<T>(ptr: *const T) -> T {
-        // 安全性:
+        // 安全性要求:
         // - 调用者需保证 `ptr` 有效且可读
         // - 调用者需保证 `ptr` 指向有效的 `T` 类型对象
         // - 这是对齐类型，因此需要保证 `ptr` 满足 `T` 类型的对齐要求
@@ -159,11 +147,11 @@ impl IsAligned for Aligned {
 
     #[inline]
     unsafe fn copy_nonoverlapping<T>(src: *const T, dst: *mut T, count: usize) {
-        // 安全性:
+        // 安全性要求:
         // - 调用者需保证 `src` 有效且可读
         // - 调用者需保证 `dst` 有效且可写
-        // - 调用者需保证 `src` 和 `dst` 在 `count` 大小的区域不发生重叠
-        // - 调用者需保证 `src` 和 `dst` 是对齐的
+        // - 调用者需保证 `src` 和 `dst` 是正确对齐的
+        // - 调用者需保证 `src` 和 `dst` 在 `count * size_of::<T>()` 区域不发生重叠
         unsafe {
             ptr::copy_nonoverlapping(src, dst, count);
         }
@@ -171,10 +159,10 @@ impl IsAligned for Aligned {
 
     #[inline]
     unsafe fn drop_in_place<T>(ptr: *mut T) {
-        // 安全性:
+        // 安全性要求:
         // - 调用者需保证 `ptr` 有效且可读可写
         // - 调用者需保证 `ptr` 指向有效的 `T` 类型实例
-        // - 调用者需要保证 `ptr` 是有效且目标可 `drop` 的
+        // - 调用者需要保证指向的目标是可 `drop` 的
         // - 调用者需要保证此函数执行后 `ptr` 不能再被使用
         // - 这是对齐类型，因此需要保证 `ptr` 满足 `T` 类型的对齐要求
         unsafe {
@@ -186,7 +174,7 @@ impl IsAligned for Aligned {
 impl IsAligned for Unaligned {
     #[inline]
     unsafe fn read_ptr<T>(ptr: *const T) -> T {
-        // 安全性:
+        // 安全性要求:
         // - 调用者需保证 `ptr` 有效且可读
         // - 调用者需保证 `ptr` 指向有效的 `T` 类型对象
         unsafe { ptr.read_unaligned() }
@@ -194,11 +182,11 @@ impl IsAligned for Unaligned {
 
     #[inline]
     unsafe fn copy_nonoverlapping<T>(src: *const T, dst: *mut T, count: usize) {
-        // 安全性:
+        // 安全性要求:
         // - 调用者需保证 `src` 有效且可读
         // - 调用者需保证 `dst` 有效且可写
-        // - 调用者需保证 `src` 和 `dst` 在 `count` 大小的区域不发生重叠
         // - 这将基于字节拷贝，因此始终满足对齐要求
+        // - 调用者需保证 `src` 和 `dst` 在 `count * size_of::<T>()` 区域不发生重叠
         unsafe {
             ptr::copy_nonoverlapping::<u8>(
                 src.cast::<u8>(),
@@ -210,10 +198,10 @@ impl IsAligned for Unaligned {
 
     #[inline]
     unsafe fn drop_in_place<T>(ptr: *mut T) {
-        // 安全性:
+        // 安全性要求:
         // - 调用者需保证 `ptr` 有效且可读可写
         // - 调用者需保证 `ptr` 指向有效的 `T` 类型实例
-        // - 调用者需要保证 `ptr` 是有效且目标可 `drop` 的
+        // - 调用者需要保证指向的目标是可 `drop` 的
         // - 调用者需要保证此函数执行后 `ptr` 不能再被使用
         unsafe {
             drop(ptr.read_unaligned());
@@ -221,76 +209,80 @@ impl IsAligned for Unaligned {
     }
 }
 
-/// 一个类型擦除的指向不可变对象的指针。
+/// 一个类型擦除的指向不可变对象的指针
 ///
-/// 可以把它看做 `&'a dyn Any` ，但它没有元数据且可指向非 Rust 对印的类型。
-///
-/// 这个类型试图模仿借用，因此：
-/// - 它是不可变的，因此指向的对象不应该在它还存在时发生变化。
+/// 此类型在概念上类似不可变引用，可以把它看做 `&'a dyn Any` 。
+/// 
+/// 安全地使用它应满足以下条件：
 /// - 它必须始终指向一个有效的值。
 /// - 生命周期 `'a` 准确地表示此指针多久有效。
 /// - 如果 `A` 是 [`Aligned`]，指针需要满足其指向类型的[对齐要求]。
+/// - 它是不可变的，因此它指向的对象在此指针还有效时不应该发生变化。
+/// （正如不可变引用有效时，引用的对象不应被改变）
 ///
 /// [对齐要求]: https://doc.rust-lang.org/std/ptr/index.html#alignment
 #[derive(Copy, Clone)]
 #[repr(transparent)]
 pub struct Ptr<'a, A: IsAligned = Aligned>(NonNull<u8>, PhantomData<(&'a u8, A)>);
 
-/// 一个类型擦除的指向可变对象的指针。
+/// 一个类型擦除的指向可变对象的指针
 ///
-/// 可以把它看做 `&'a mut dyn Any` ，但它没有元数据且可指向非 Rust 对印的类型。
+/// 此类型在概念上类似可变引用，可以把它看做 `&'a mut dyn Any` 。
 ///
-/// 这个类型试图模仿借用，因此：
-/// - 指针是可变且互斥的，因此自身不支持复制。
+/// 安全地使用它应满足以下条件：
 /// - 它必须始终指向一个有效的值。
 /// - 生命周期 `'a` 准确地表示此指针多久有效。
 /// - 如果 `A` 是 [`Aligned`]，指针需要满足其指向类型的[对齐要求]。
+/// - 指针是可变且互斥的。正如一个对象的可变引用存在时，不能存在它的不可变引用;
+/// 同一时刻也只能有一个生效的可变指针（[`PtrMut`]、[`OwningPtr`]、[`MovingPtr`]） ，或任意个生效的不可变指针 [`Ptr`] 。
 ///
 /// [对齐要求]: https://doc.rust-lang.org/std/ptr/index.html#alignment
 #[repr(transparent)]
 pub struct PtrMut<'a, A: IsAligned = Aligned>(NonNull<u8>, PhantomData<(&'a mut u8, A)>);
 
-/// 一个类型擦除的类似 [`Box`] 的指针。
-///
-/// 这个指针不负责目标的内存释放，因此通常用于执行栈区数据或 `Vec` 等容器托管的数据。
-///
-/// 概念上它有数据的所有权，因此你应该负责调用数据的 `Drop::drop` 。
-/// 可以把他想象成 `&'a mut ManuallyDrop<dyn Any>` 。
-///
-/// 这个类型试图模仿借用，因此：
-/// - 指针是可变且互斥的，因此自身不支持复制。
+/// 一个类型擦除的指针。
+/// 
+/// 这个指针**不负责**目标的内存释放，它通常用于指向栈区或 `Vec` 等容器托管的数据。  
+/// 概念上它有数据的“所有权”，可以把他想象成 `&'a mut ManuallyDrop<dyn Any>` ，因此需要你手动调用目标的 `Drop::drop` 。
+/// 
+/// 安全地使用它应满足以下条件：
 /// - 它必须始终指向一个有效的值。
 /// - 生命周期 `'a` 准确地表示此指针多久有效。
 /// - 如果 `A` 是 [`Aligned`]，指针需要满足其指向类型的[对齐要求]。
+/// - 指针是可变且互斥的。正如一个对象的可变引用存在时，不能存在它的不可变引用;
+/// 同一时刻也只能有一个生效的可变指针（[`PtrMut`]、[`OwningPtr`]、[`MovingPtr`]） ，或任意个生效的不可变指针 [`Ptr`] 。
 ///
 /// [对齐要求]: https://doc.rust-lang.org/std/ptr/index.html#alignment
-/// [`Box`]: https://doc.rust-lang.org/std/boxed/struct.Box.html
 #[repr(transparent)]
 pub struct OwningPtr<'a, A: IsAligned = Aligned>(NonNull<u8>, PhantomData<(&'a mut u8, A)>);
 
-/// 一个类似 [`Box`] 的指针，用于廉价地“移动”大对象。
+/// 一个附带类型的用于廉价移动“大对象”的指针。
 ///
-/// 这个指针不负责目标的内存释放，因此通常用于执行栈区数据或 `Vec` 等容器托管的数据。
+/// 这个指针**不负责**目标的内存释放，它通常用于指向栈区或 `Vec` 等容器托管的数据。  
+/// 概念上它有数据的“所有权”且知晓数据类型，因此他会在自身 `drop` 时自动执行目标数据的 `Drop::drop` 。
+/// 
+/// “大对象”通常是“一个小对象+一个堆区大对象”，小对象的 `drop` 负责清理堆区对象资源。
+/// 此指针 [`MovingPtr`] 指向这个小对象的并代理它的的 `drop` 函数。
+/// 此时小对象自身可以廉价的在内存中拷贝/移动，不会触发 `drop` 也不需要移动大对象 。
 ///
-/// 概念上它有数据的所有权且知晓其类型，因此会在自身消亡时执行目标的 `Drop::drop` 。
-///
-/// 这个类型试图模仿借用，因此：
-/// - 指针是可变且互斥的，因此自身不支持复制。
+/// 安全地使用它应满足以下条件：
 /// - 它必须始终指向一个有效的值。
 /// - 生命周期 `'a` 准确地表示此指针多久有效。
-/// - 不支持指针的算术运算。
 /// - 如果 `A` 是 [`Aligned`]，指针需要满足其指向类型的[对齐要求]。
+/// - 指针是可变且互斥的。正如一个对象的可变引用存在时，不能存在它的不可变引用;
+/// 同一时刻也只能有一个生效的可变指针（[`PtrMut`]、[`OwningPtr`]、[`MovingPtr`]） ，或任意个生效的不可变指针 [`Ptr`] 。
+/// - 禁止指针的算术操作。
 ///
 /// [对齐要求]: https://doc.rust-lang.org/std/ptr/index.html#alignment
-/// [`Box`]: https://doc.rust-lang.org/std/boxed/struct.Box.html
 #[repr(transparent)]
 pub struct MovingPtr<'a, T, A: IsAligned = Aligned>(NonNull<T>, PhantomData<(&'a mut T, A)>);
 
+// 用于在 Debug 模式中检查指针是否对齐
 trait DebugEnsureAligned {
     fn debug_ensure_aligned(self) -> Self;
 }
 
-// miri 运行时自带指针对齐检查
+// miri 运行时已自带指针对齐检查
 #[cfg(all(debug_assertions, not(miri)))]
 impl<T: Sized> DebugEnsureAligned for *mut T {
     #[track_caller]
@@ -315,12 +307,13 @@ impl<T: Sized> DebugEnsureAligned for *mut T {
 }
 
 impl<'a, A: IsAligned> Ptr<'a, A> {
-    /// 从裸指针创建新对象。
+    /// 从裸指针创建新对象
     ///
-    /// # 安全性
-    /// - `inner`必须指向一个有效的值.
-    /// - 生命周期 `'a` 需要限制 [`Ptr`] 的有效性，在 [`Ptr`] 处于活动状态时，除了通过 [`UnsafeCell`] ，不能改变指向的目标。
+    /// # 安全性要求
+    /// - `inner` 必须指向一个有效的值。
+    /// - 生命周期 `'a` 需要正确限制 [`Ptr`] 的有效性。
     /// - 如果 `A` 是 [`Aligned`] ，那么 `inner` 必须满足指向类型的[对齐要求]。
+    /// - 在 [`Ptr`] 处于活动状态时，不能改变指向的目标（除非使用 [`UnsafeCell`] ）。
     ///
     /// [对齐要求]: https://doc.rust-lang.org/std/ptr/index.html#alignment
     #[inline]
@@ -330,8 +323,8 @@ impl<'a, A: IsAligned> Ptr<'a, A> {
 
     /// 获取底层指针并擦除生命周期
     ///
-    /// # 安全性
-    /// 如果目标不可变，不能通过 `*mut T` 修改目标数据。
+    /// # 安全性要求
+    /// - 若对象本身不可变，不能通过此指针修改对象
     ///
     /// 如果可行，尽量使用 [`deref`](Self::deref) 而非此函数（前者保留了生命周期）。
     #[inline]
@@ -339,13 +332,13 @@ impl<'a, A: IsAligned> Ptr<'a, A> {
         self.0.as_ptr()
     }
 
-    /// 从此指针获取一个带生命周期的 `&T`
+    /// 从指针获取一个带生命周期的 `&T`
     ///
-    /// # 安全性
+    /// # 安全性要求
     /// - `T` 必须是指针指向的正确类型
-    /// - 如果 `A` 是 [`Unaligned`]，指针依然需要满足 `T` 类型的[对齐要求]。
+    /// - 即使 `A` 是 [`Unaligned`]，指针依然需要[正确对齐]。
     ///
-    /// [对齐要求]: https://doc.rust-lang.org/std/ptr/index.html#alignment
+    /// [正确对齐]: https://doc.rust-lang.org/std/ptr/index.html#alignment
     #[inline]
     pub unsafe fn deref<T>(self) -> &'a T {
         let ptr = self.as_ptr().cast::<T>().debug_ensure_aligned();
@@ -354,10 +347,13 @@ impl<'a, A: IsAligned> Ptr<'a, A> {
 
     /// 将 [`Ptr`] 变为 [`PtrMut`]
     ///
-    /// # 安全性
+    /// # 安全性要求
     /// - `Ptr` 指向的数据必须是可写的。
-    /// - 必须保证没有其他活跃的可变引用执行 `Ptr` 的目标数据。
-    /// - 新的指向相同数据的 [`PtrMut`] 必须在旧者被丢弃后才能创建
+    /// - 任何对象在同一时刻至多存在一个活跃的可变引用（`&mut T`、`PtrMut`、`OwningPtr`...）。
+    /// - [`PtrMut`] 创建后，旧的 [`Ptr`] 不可再被使用，因为对象可能被修改。
+    /// （正如获取可变引用后，不可变引用将失效）
+    /// 
+    /// > 在 bevy_ptr 中，此函数被命名为 assert_unique 。
     #[inline]
     pub const unsafe fn into_mut(self) -> PtrMut<'a, A> {
         PtrMut(self.0, PhantomData)
@@ -374,11 +370,11 @@ impl<'a, T: ?Sized> From<&'a T> for Ptr<'a> {
 impl<'a, A: IsAligned> PtrMut<'a, A> {
     /// 从裸指针创建新对象。
     ///
-    /// # 安全性
-    /// - `inner`必须指向一个有效的值.
-    /// - 读写 `inner` 时需要有正确的保证。
+    /// # 安全性要求
+    /// - `inner` 必须指向一个有效的值，且可写。
+    /// - 生命周期 `'a` 需要正确限制 [`PtrMut`] 的有效性。
     /// - 如果 `A` 是 [`Aligned`] ，那么 `inner` 必须满足指向类型的[对齐要求]。
-    /// - 生命周期 `'a` 需要限制 [`PtrMut`] 的有效性，在 [`PtrMut`] 处于活动状态时，不能通过其他方式读写指向的目标。
+    /// - 在 [`PtrMut`] 处于活动状态时，不能通过其他方式修改目标对象（只能通过此指针）。
     ///
     /// [对齐要求]: https://doc.rust-lang.org/std/ptr/index.html#alignment
     #[inline]
@@ -396,33 +392,69 @@ impl<'a, A: IsAligned> PtrMut<'a, A> {
 
     /// 从此指针获取一个带生命周期的 `&mut T`
     ///
-    /// # 安全性
+    /// # 安全性要求
     /// - `T` 必须是指针指向的正确类型
-    /// - 如果 `A` 是 [`Unaligned`]，指针依然需要满足 `T` 类型的[对齐要求]。
+    /// - 即使 `A` 是 [`Unaligned`]，指针依然需要[正确对齐]。
     ///
-    /// [对齐要求]: https://doc.rust-lang.org/std/ptr/index.html#alignment
+    /// [正确对齐]: https://doc.rust-lang.org/std/ptr/index.html#alignment
     #[inline]
     pub unsafe fn deref_mut<T>(self) -> &'a mut T {
         let ptr = self.as_ptr().cast::<T>().debug_ensure_aligned();
-        // 安全性: 调用者需要保证指针指向的 `T` 是可以正确获取引用的
         unsafe { &mut *ptr }
     }
 
-    /// 获取不可变指针
+    /// 获取不可变指针，通常用于作用域传递
+    /// 
+    /// 安全性要求：（即 Rust 别名规则） 
+    /// - `PtrMut` 的有效性保证应该是 `Ptr` 的超集
+    /// - `Ptr` 有效期间不能使用 `PtrMut` 修改数据。
+    /// 
+    /// # 例
+    /// 
+    /// ```
+    /// use vct_ptr::PtrMut;
+    /// 
+    /// let mut x = 5;
+    /// let pm = PtrMut::from(&mut x);
+    /// {
+    ///     // 此时 Ptr 生效期间 PtrMut 不应被使用
+    ///     let p = pm.as_ref();
+    /// }
+    /// ```
     #[inline]
     pub const fn as_ref(&self) -> Ptr<'_, A> {
-        // 安全性: `PtrMut` 的有效性保证应该是 `Ptr` 的超集，且 `Ptr` 有效期间不能使用 `PtrMut` 修改数据。
         unsafe { Ptr::new(self.0) }
     }
 
-    /// 从当前的 [`PtrMut`] 获取一个更小的生命周期版本，以临时传递或局部使用
+    /// 从当前的 [`PtrMut`] 获取一个更小的生命周期版本
+    /// 
+    /// 由于 `PtrMut` 不支持复制，此函数通常用于指针的函数传递。
+    /// 
+    /// 安全性要求
+    /// - 同一时刻只能有一个活跃的可变指针，新指针有效期间不可使用旧指针
+    /// 
+    /// # 例
+    /// 
+    /// ```
+    /// use vct_ptr::PtrMut;
+    /// 
+    /// let mut x = 5;
+    /// let mut pm1 = PtrMut::from(&mut x);
+    /// {
+    ///     // 此时新的 PtrMut 的生命周期更小
+    ///     // 在 `pm2` 生效期间，不应该再使用 `pm1`
+    ///     let pm2 = pm1.reborrow();
+    /// }
+    /// ```
     #[inline]
     pub const fn reborrow(&mut self) -> PtrMut<'_, A> {
-        // 安全性：在新的 `PtrMut` 有效期间，原 `PtrMut` 不能使用
+        // 使用 `&mut self` 以通过 Rust 借用检查预防违规调用
         unsafe { PtrMut::new(self.0) }
     }
 
-    /// 将 [`PtrMut`] 转换为 [`OwningPtr`]
+    /// 将 [`PtrMut`] 转换为 [`OwningPtr`]，消耗自身
+    /// 
+    /// 此函数不负责 `forget` 目标的 `drop` 函数，需注意 `drop` 的调用情况。
     #[inline]
     pub const unsafe fn promote(self) -> OwningPtr<'a, A> {
         OwningPtr(self.0, PhantomData)
@@ -438,16 +470,21 @@ impl<'a, T: ?Sized> From<&'a mut T> for PtrMut<'a> {
 
 impl<'a> OwningPtr<'a> {
     /// 此函数用于削减编译耗时
-    /// 此处代码被编译的次数与类型数 `T` 一致，内联 `make` 则将与类型数与函数数的乘积  `T` * `F` 一致
+    /// 
+    /// 此处代码被编译的次数与类型数 T 一致，
+    /// 内联 `make` 则将和类型数与函数数的乘积(T*F)一致。
     unsafe fn make_internal<T>(temp: &mut ManuallyDrop<T>) -> OwningPtr<'_> {
         unsafe { PtrMut::from(temp).promote() }
     }
 
-    /// 从目标创建一个 [`OwningPtr`] 对象并消耗其值，保证不会出现二次 drop 的情况
+    /// 将对象移动到局部作用域，将其 `drop` 交给 `OwningPtr` 托管，然后通过 `OwningPtr` 消耗此值。
+    /// 
+    /// # 安全性要求
+    /// - 若闭包未将 `val` 数据移出，则闭包应通过 `OwningPtr` 执行 `drop_as` 函数清理数据（若 `val` 有 `Drop` 实现）。
+    /// - 若闭包将 `val` 数据移出，则旧的 `OwningPtr` 不可再使用（其指向旧地址）。
     #[inline]
     pub fn make<T, F: FnOnce(OwningPtr<'_>) -> R, R>(val: T, f: F) -> R {
         let mut val = ManuallyDrop::new(val);
-        // 安全性：此处传入的 `OwningPtr` 指向函数内的 val，因此它必须在闭包中被消耗，不能保存到外部
         f(unsafe { Self::make_internal(&mut val) })
     }
 }
@@ -455,12 +492,12 @@ impl<'a> OwningPtr<'a> {
 impl<'a> OwningPtr<'a, Unaligned> {
     /// 消耗 [`OwningPtr`] 并获取底层的 `T` 数据。
     ///
-    /// # 安全性
+    /// # 安全性要求
     /// - `T` 必须是 [`OwningPtr`] 指向的数据类型。
+    /// - 调用者需自行保证指针 read_unaligned 的安全性。
     #[inline]
     pub const unsafe fn read_unaligned<T>(self) -> T {
         let ptr = self.as_ptr().cast::<T>();
-        // 安全性：调用者需自行保证 `read_unaligned` 的安全性
         unsafe { ptr.read_unaligned() }
     }
 }
@@ -468,11 +505,11 @@ impl<'a> OwningPtr<'a, Unaligned> {
 impl<'a, A: IsAligned> OwningPtr<'a, A> {
     /// 从裸指针创建新对象。
     ///
-    /// # 安全性
-    /// - `inner`必须指向一个有效的值.
-    /// - 读写 `inner` 时需要有正确的保证。
+    /// # 安全性要求
+    /// - `inner` 必须指向一个有效的值。
+    /// - 生命周期 `'a` 需要正确限制 [`OwningPtr`] 的有效性。
     /// - 如果 `A` 是 [`Aligned`] ，那么 `inner` 必须满足指向类型的[对齐要求]。
-    /// - 生命周期 `'a` 需要限制 [`OwningPtr`] 的有效性，在 [`OwningPtr`] 处于活动状态时，不能通过其他方式读写指向的目标。
+    /// - 在 [`OwningPtr`] 处于活动状态时，不能通过其他方式修改目标对象（只能通过此指针）。
     ///
     /// [对齐要求]: https://doc.rust-lang.org/std/ptr/index.html#alignment
     #[inline]
@@ -488,11 +525,11 @@ impl<'a, A: IsAligned> OwningPtr<'a, A> {
 
     /// 消耗 [`OwningPtr`] 并复制其指向的数据 `T` 。
     ///
-    /// # 安全性
+    /// # 安全性要求
     /// - `T` 必须是指针指向的正确类型
-    /// - 如果 `A` 是 [`Unaligned`]，指针依然需要满足 `T` 类型的[对齐要求]。
+    /// - 即使 `A` 是 [`Unaligned`]，指针依然需要[正确对齐]。
     ///
-    /// [对齐要求]: https://doc.rust-lang.org/std/ptr/index.html#alignment
+    /// [正确对齐]: https://doc.rust-lang.org/std/ptr/index.html#alignment
     #[inline]
     pub unsafe fn read<T>(self) -> T {
         let ptr = self.as_ptr().cast::<T>().debug_ensure_aligned();
@@ -501,11 +538,12 @@ impl<'a, A: IsAligned> OwningPtr<'a, A> {
 
     /// 消耗 [`OwningPtr`] 并调用其底层数据 `T` 的 `drop`
     ///
-    /// # 安全性
+    /// # 安全性要求
     /// - `T` 必须是指针指向的正确类型
-    /// - 如果 `A` 是 [`Unaligned`]，指针依然需要满足 `T` 类型的[对齐要求]。
+    /// - 即使 `A` 是 [`Unaligned`]，指针依然需要[正确对齐]。
+    /// - `OwningPtr` 指向的数据未必不会在作用域结束时自行 `drop`，调用者需要避免二次 `drop` 。
     ///
-    /// [对齐要求]: https://doc.rust-lang.org/std/ptr/index.html#alignment
+    /// [正确对齐]: https://doc.rust-lang.org/std/ptr/index.html#alignment
     #[inline]
     pub unsafe fn drop_as<T>(self) {
         let ptr = self.as_ptr().cast::<T>().debug_ensure_aligned();
@@ -514,20 +552,56 @@ impl<'a, A: IsAligned> OwningPtr<'a, A> {
         }
     }
 
-    /// 从所有权指针获取不可变指针
+    /// 获取不可变指针，通常用于作用域传递
+    /// 
+    /// 安全性要求：（即 Rust 别名规则） 
+    /// - `OwningPtr` 的有效性保证应该是 `Ptr` 的超集
+    /// - `Ptr` 有效期间不能使用 `OwningPtr` 修改数据。
+    /// 
+    /// # 例
+    /// 
+    /// ```
+    /// use vct_ptr::PtrMut;
+    /// 
+    /// let mut x = 5;
+    /// let op = unsafe{ PtrMut::from(&mut x).promote() };
+    /// {
+    ///     // 此时 Ptr 生效期间 OwningPtr 不应被使用
+    ///     let p = op.as_ref();
+    /// }
+    /// ```
     #[inline]
     pub const fn as_ref(&self) -> Ptr<'_, A> {
-        // 安全性: `OwningPtr` 的有效性保证应该是 `Ptr` 的超集，且 `Ptr` 有效期间不能使用 `OwningPtr` 修改数据。
         unsafe { Ptr::new(self.0) }
     }
 
-    /// 从所有权指针获取可变指针
+    /// 获取可变指针，通常用于作用域传递
+    /// 
+    /// 安全性要求
+    /// - 同一时刻只能有一个活跃的可变指针，新指针有效期间不可使用旧指针
+    /// 
+    /// # 例
+    /// 
+    /// ```
+    /// use vct_ptr::PtrMut;
+    /// 
+    /// let mut x = 5;
+    /// let op = unsafe{ PtrMut::from(&mut x).promote() };
+    /// {
+    ///     // 在 `pm` 生效期间，不应该再使用 `op`
+    ///     let pm = op.as_mut();
+    /// }
+    /// ```
     #[inline]
     pub const fn as_mut(&mut self) -> PtrMut<'_, A> {
+        // 使用 `&mut self` 以通过 Rust 借用检查预防违规调用
         unsafe { PtrMut::new(self.0) }
     }
 
-    /// 根据类型转换到 [`MovingPtr`].
+    /// 根据类型转换到 [`MovingPtr`]
+    /// 
+    /// # 安全性要求
+    /// - `MovingPtr` 会自动执行 `T` 的 `Drop::drop`，调用者需要避免二次 `drop` 。
     #[inline]
     pub const unsafe fn cast<T>(self) -> MovingPtr<'a, T, A> {
         MovingPtr(self.0.cast::<T>(), PhantomData)
@@ -552,7 +626,8 @@ macro_rules! impl_ptr {
         }
 
         impl<A: IsAligned> $ptr<'_, A> {
-            /// 计算偏移后的指针。
+            /// 计算偏移后的指针
+            /// 
             /// 因为类型擦除，偏移量将直接以字节为单位。
             #[inline]
             pub const unsafe fn byte_offset(self, count: isize) -> Self {
@@ -562,7 +637,8 @@ macro_rules! impl_ptr {
                 )
             }
 
-            /// 计算偏移后的指针，只能正向偏移。
+            /// 计算正向偏移后的指针
+            /// 
             /// 因为类型擦除，偏移量将直接以字节为单位。
             #[inline]
             pub const unsafe fn byte_add(self, count: usize) -> Self {
@@ -597,7 +673,9 @@ macro_rules! impl_ptr {
 }
 
 impl_ptr!(Ptr);
+
 impl_ptr!(PtrMut);
+
 impl_ptr!(OwningPtr);
 
 impl<'a, T> MovingPtr<'a, T, Aligned> {
@@ -627,11 +705,11 @@ impl<'a, T, A: IsAligned> MovingPtr<'a, T, A> {
     ///
     /// 作为更安全的替代，建议使用 [`move_as_ptr`] 。
     ///
-    /// # 安全性
-    /// - `inner`必须指向一个有效的值.
-    /// - 读写 `inner` 时需要有正确的保证。
+    /// # 安全性要求
+    /// - `inner` 必须指向一个有效的值。
+    /// - 生命周期 `'a` 需要正确限制 [`MovingPtr`] 的有效性。
     /// - 如果 `A` 是 [`Aligned`] ，那么 `inner` 必须满足指向类型的[对齐要求]。
-    /// - 生命周期 `'a` 需要限制 [`MovingPtr`] 的有效性，在 [`MovingPtr`] 处于活动状态时，不能通过其他方式读写指向的目标。
+    /// - 在 [`MovingPtr`] 处于活动状态时，不能通过其他方式修改目标对象（只能通过此指针）。
     ///
     /// [对齐要求]: https://doc.rust-lang.org/std/ptr/index.html#alignment
     #[inline]
@@ -705,12 +783,13 @@ impl<'a, T, A: IsAligned> MovingPtr<'a, T, A> {
     }
 
     /// 读取指针指向的值
+    /// 
+    /// # 安全性要求：
+    /// - 自身必须始终指向一个有效的 `T` 类型实例。
+    /// - 自身“拥有”它指向的值。
+    /// - 如果 `A` 是 [`Aligned`]，那么指针需要满足 `T` 类型的对齐要求
     #[inline]
     pub fn read(self) -> T {
-        // 安全性:
-        // - `self.0` 必须对读取有效，因为此类型拥有它指向的值.
-        // - `self.0` 必须始终指向一个有效的 `T` 类型实例。
-        // - 如果 `A` 是 [`Aligned`]，那么指针需要满足 `T` 类型的对齐要求
         let value = unsafe { A::read_ptr(self.0.as_ptr()) };
         mem::forget(self);
         value
@@ -718,41 +797,35 @@ impl<'a, T, A: IsAligned> MovingPtr<'a, T, A> {
 
     /// 将此指针指向的值写入指定位置。
     ///
-    /// 该操作不会销毁 `dst` 上已有的值；调用者需负责确保 `dst` 上原有值被正确处理（例如先调用 `drop`）。
+    /// 该操作不会预先 `drop` `dst` 上已有的值，调用者需确保 `dst` 的原有值被正确处理。
     ///
-    /// # 安全性
+    /// # 安全性要求
+    /// - 自身“拥有”其指向的值，且值可读。
     /// - `dst` 必须指向可写且有效的内存。
     /// - 若类型参数 `A` 为 [`Aligned`]，则 `dst` 必须满足 `T` 的[对齐要求]。
+    /// - `src` 的对齐性应自行保证。
     ///
     /// [对齐要求]: https://doc.rust-lang.org/std/ptr/index.html#alignment
     #[inline]
     pub unsafe fn write_to(self, dst: *mut T) {
         let src = self.0.as_ptr();
         mem::forget(self);
-        // SAFETY:
-        //  `src` 必须可读，因为该指针被视为拥有其指向的值。
-        // - 调用者必须保证 `dst` 可写且有效。
-        // - 当 `A` 为 `Aligned` 时，调用者必须保证 `dst` 满足 `T` 的对齐要求；
-        //   同时 `src` 的对齐性应自行保证，不在此处检查。
         unsafe { A::copy_nonoverlapping(src, dst, 1) };
     }
 
     /// 将此指针指向的值写入指定位置。
     ///
-    /// 此操作将预先丢弃 `dst` 中的值。
+    /// 此操作将预先 `drop` `dst` 中的值。
+    /// 
+    /// # 安全性要求
+    /// - `dst` 为可变借用，必须指向一个有效的 `T` 实例。
+    /// - `dst` 必须满足 `T` 的对齐要求。
+    /// - `dst` 指向的值必须可以被安全地丢弃（drop）。
+    /// - `dst` 不存在其他活动的引用。
     #[inline]
     pub fn assign_to(self, dst: &mut T) {
-        // 安全性：
-        // - `dst` 为可变借用，必须指向一个有效的 `T` 实例。
-        // - `dst` 指向的值必须可以被安全地丢弃（drop）。
-        // - `dst` 不得与其他访问产生别名（在此期间不存在其他活动引用）。
         unsafe {
             ptr::drop_in_place(dst);
-        }
-        // 安全性：
-        // - `dst` 为可变借用，必须可写且指向有效内存。
-        // - `dst` 必须满足 `T` 的对齐要求。
-        unsafe {
             self.write_to(dst);
         }
     }
@@ -763,11 +836,11 @@ impl<'a, T, A: IsAligned> MovingPtr<'a, T, A> {
     ///
     /// 字段的正确字节偏移量可通过 [`core::mem::offset_of`] 获取。
     ///
-    /// # 安全性
+    /// # 安全性要求
     /// - `f` 必须返回指向 `T` 内部某个有效字段的非空指针。
     /// - 若 `A` 为 [`Aligned`]，则 `T` 不能是 `repr(packed)`。
     /// - 在此函数返回后，不应再把 `self` 当作完整值来访问或丢弃。尚未被移出的字段仍可单独访问或丢弃。
-    /// - 此函数不得与其它对同一字段的访问别名（包括对同一字段的其它 `move_field` 调用），除非先对该字段调用了 [`forget`]。
+    /// - 此函数不得与其它对同一字段的访问重复（包括对同一字段的其它 `move_field` 调用），除非先对该字段调用了 [`forget`]。
     ///
     /// # Example
     ///
@@ -798,7 +871,7 @@ impl<'a, T, A: IsAligned> MovingPtr<'a, T, A> {
     ///    let field_a = parent.move_field(|ptr| &raw mut (*ptr).field_a);
     ///    let field_b = parent.move_field(|ptr| &raw mut (*ptr).field_b);
     ///    let field_c = parent.move_field(|ptr| &raw mut (*ptr).field_c);
-    ///    // 每次 insert 都可能 panic，在调用它们之前先保证 `parent_ptr` 不会被 drop 。
+    ///    // 调用它们之前先保证 `parent` 不会被 drop 。
     ///    core::mem::forget(parent);
     ///    insert(field_a);
     ///    insert(field_b);
@@ -807,9 +880,11 @@ impl<'a, T, A: IsAligned> MovingPtr<'a, T, A> {
     /// ```
     ///
     /// [`forget`]: core::mem::forget
-    /// [`move_field`]: Self::move_field
     #[inline(always)]
-    pub unsafe fn move_field<U>(&self, f: impl Fn(*mut T) -> *mut U) -> MovingPtr<'a, U, A> {
+    pub unsafe fn move_field<U>(
+        &self,
+        f: impl Fn(*mut T) -> *mut U
+    ) -> MovingPtr<'a, U, A> {
         MovingPtr(
             unsafe { NonNull::new_unchecked(f(self.0.as_ptr())) },
             PhantomData,
@@ -820,37 +895,35 @@ impl<'a, T, A: IsAligned> MovingPtr<'a, T, A> {
 impl<'a, T, A: IsAligned> MovingPtr<'a, MaybeUninit<T>, A> {
     /// 为 `self` 的某个字段创建一个 [`MovingPtr`]。
     ///
-    /// 本函数用于“析构式移动”（deconstructive moves）。
+    /// 该函数专为析构式移动（deconstructive moves）设计。
     ///
-    /// 字段的正确字节偏移量可通过 [`core::mem::offset_of`] 获得。
+    /// 字段的正确字节偏移量可通过 [`core::mem::offset_of`] 获取。
     ///
-    /// # 安全性
+    /// # 安全性要求
     /// - `f` 必须返回指向 `T` 内部某个有效字段的非空指针。
     /// - 若 `A` 为 [`Aligned`]，则 `T` 不能是 `repr(packed)`。
-    /// - 在本函数返回后，不应再把 `self` 当作完整值来访问或丢弃。尚未被移出的字段仍可单独访问或丢弃。
-    /// - 在持有字段指针期间，不能与对同一字段的其它访问发生别名（包括对同一字段的其它 `move_field` 调用），除非先对该字段调用了 [`core::mem::forget`]。
+    /// - 在此函数返回后，不应再把 `self` 当作完整值来访问或丢弃。尚未被移出的字段仍可单独访问或丢弃。
+    /// - 此函数不得与其它对同一字段的访问重复（包括对同一字段的其它 `move_field` 调用），除非先对该字段调用了 [`forget`]。
     ///
     /// [`forget`]: core::mem::forget
-    /// [`move_field`]: Self::move_field
     #[inline(always)]
     pub unsafe fn move_maybe_uninit_field<U>(
         &self,
         f: impl Fn(*mut T) -> *mut U,
     ) -> MovingPtr<'a, MaybeUninit<U>, A> {
         let self_ptr = self.0.as_ptr().cast::<T>();
-        // 安全性:
         // - 调用者必须保证 `U` 对应字段的类型正确且返回指针非空。
         // - `MaybeUninit<T>` 是 `repr(transparent)`，因此其内存布局应与 `T` 相同。
         let field_ptr = unsafe { NonNull::new_unchecked(f(self_ptr)) };
         MovingPtr(field_ptr.cast::<MaybeUninit<U>>(), PhantomData)
     }
 
-    /// 将指向的 `MaybeUninit<T>` 视为已初始化并返回指向 `T` 的 `MovingPtr`。
+    /// 将指向的 `MaybeUninit<T>` 视为已初始化并返回指向 `T` 的 `MovingPtr`
     ///
     /// 参见：[`MaybeUninit::assume_init`]。
     ///
-    /// # 安全性
-    /// 调用者必须保证 `self` 指向的值已经完成初始化；否则会导致未定义行为。
+    /// # 安全性要求
+    /// - 调用者必须保证 `self` 指向的值已经完成初始化；否则会导致未定义行为。
     #[inline]
     pub unsafe fn assume_init(self) -> MovingPtr<'a, T, A> {
         let value = MovingPtr(self.0.cast::<T>(), PhantomData);
@@ -883,12 +956,6 @@ impl<T> Debug for MovingPtr<'_, T, Unaligned> {
 impl<'a, T, A: IsAligned> From<MovingPtr<'a, T, A>> for OwningPtr<'a, A> {
     #[inline]
     fn from(value: MovingPtr<'a, T, A>) -> Self {
-        // 安全性：
-        // - `value.0` 必须始终指向类型 `T` 的有效值。
-        // - 类型参数 `A` 在输入到输出间保持一致，保留相同的对齐保证。
-        // - `value.0` 的来源（provenance）必须正确，以允许对 `T` 的读写。
-        // - 生命周期 `'a` 在输入到输出间保持一致，保留相同的生命周期约束。
-        // - `OwningPtr` 维持与 `MovingPtr` 相同的别名不变式。
         let ptr = unsafe { OwningPtr::new(value.0.cast::<u8>()) };
         mem::forget(value);
         ptr
@@ -949,13 +1016,26 @@ pub struct ThinSlicePtr<'a, T> {
     _marker: PhantomData<&'a [T]>,
 }
 
+// ↓ 此写法存在 Copy 和 Clone 的自动实现存在问题 
+// ```
+// #[derive(Copy, Clone)]
+// pub struct ThinSlicePtr<'a, T> {
+//     ptr: NonNull<T>,
+//     #[cfg(debug_assertions)]
+//     len: usize,
+//     _marker: PhantomData<&'a [T]>,
+// }
+// ```
+
 impl<'a, T> ThinSlicePtr<'a, T> {
     /// 索引切片但不进行边界检查
     ///
-    /// # 安全性
+    /// # 安全性要求
     /// `index` 必须在边界内
     #[inline]
     pub const unsafe fn get(self, index: usize) -> &'a T {
+        // debug_assert! 使用 if 分支决定是否执行，而非编译期代码消除
+        // 因此需要 #[cfg(debug_assertions)] 辅助
         #[cfg(debug_assertions)]
         debug_assert!(index < self.len);
 
@@ -990,23 +1070,23 @@ mod seal_unsafe_cell {
     impl<'a, T> Sealed for &'a UnsafeCell<T> {}
 }
 
-/// 为 [`UnsafeCell`] 添加一下额外的方法
+/// 为 [`UnsafeCell`] 添加额外方法
 pub trait UnsafeCellDeref<'a, T>: seal_unsafe_cell::Sealed {
-    /// # 安全性
+    /// # 安全性要求
     /// - 返回的可变引用必须是唯一的，不得与对该 `UnsafeCell` 内容的任何其他可变或不可变引用别名。
-    /// - 必须避免数据竞争：若多个线程可访问同一 `UnsafeCell`，所有写入必须有恰当的 happens-before 关系或使用原子操作。
+    /// - 必须避免数据竞争：若多个线程访问同一 `UnsafeCell`，所有写入必须有确定的前后关系或使用原子操作。
     unsafe fn deref_mut(self) -> &'a mut T;
 
-    /// # 安全性
+    /// # 安全性要求
     /// - 对返回值生命周期 `'a`，在此期间不得再构造指向 `UnsafeCell` 内容的可变引用。
-    /// - 必须避免数据竞争：若多个线程可访问同一 `UnsafeCell`，所有写入必须有恰当的 happens-before 关系或使用原子操作。
+    /// - 必须避免数据竞争：若多个线程访问同一 `UnsafeCell`，所有写入必须有确定的前后关系或使用原子操作。
     unsafe fn deref(self) -> &'a T;
 
     /// 返回包含值的拷贝。
     ///
-    /// # 安全性
+    /// # 安全性要求
     /// - 此时该 `UnsafeCell` 不得存在指向其内容的可变引用（否则可能违反别名/可变性规则）。
-    /// - 必须避免数据竞争：若多个线程可访问同一 `UnsafeCell`，所有写入必须有恰当的 happens-before 关系或使用原子操作。
+    /// - 必须避免数据竞争：若多个线程访问同一 `UnsafeCell`，所有写入必须有确定的前后关系或使用原子操作。
     unsafe fn read(self) -> T
     where
         T: Copy;
@@ -1044,7 +1124,7 @@ macro_rules! move_as_ptr {
     };
 }
 
-/// [`deconstruct_moving_ptr`] 的复制宏
+/// [`deconstruct_moving_ptr`] 的辅助宏
 #[macro_export]
 #[doc(hidden)]
 macro_rules! get_pattern {
@@ -1056,9 +1136,9 @@ macro_rules! get_pattern {
     };
 }
 
-/// 将一个 [`MovingPtr`] 解构为其各个字段。
+/// 将一个 [`MovingPtr`] 解构为各个字段。
 ///
-/// 该宏会消耗原始的 [`MovingPtr`] 并为每个字段生成指向该字段的 [`MovingPtr`] 包装器。被解构的值不会被丢弃。
+/// 该宏会消耗原始的 [`MovingPtr`] 并为每个字段生成指向该字段的 [`MovingPtr`] 包装器，被解构的值不会被丢弃。
 ///
 /// 宏应包裹一个带有结构体模式的 `let` 表达式。它不支持按位置匹配元组的语法，
 /// 对于元组结构体请使用 `0: pat` 形式的字段匹配。
@@ -1070,7 +1150,7 @@ macro_rules! get_pattern {
 /// 将类型名或 `tuple` 用 `MaybeUninit::<_>` 包裹，则宏会把 `MovingPtr<MaybeUninit<Parent>>`
 /// 解构为对应的 `MovingPtr<MaybeUninit<Field>>` 值。
 ///
-/// # Examples
+/// # 例
 ///
 /// ## Structs
 ///
@@ -1125,12 +1205,6 @@ macro_rules! get_pattern {
 /// # struct FieldAType(usize);
 /// # struct FieldBType(usize);
 /// # struct FieldCType(usize);
-///
-/// # pub struct Parent {
-/// #   pub field_a: FieldAType,
-/// #  pub field_b: FieldBType,
-/// #  pub field_c: FieldCType,
-/// # }
 ///
 /// let parent = (
 ///   FieldAType(11),
@@ -1298,7 +1372,6 @@ mod tests {
         let py = Ptr::from(&y);
         assert_eq!(py.as_ptr() as usize, addr);
 
-        let _ = unsafe { py.into_mut() };
         let _ = NonNull::<u8>::from(py);
         let _ = py.to_unaligned();
 
@@ -1328,11 +1401,9 @@ mod tests {
 
         let mut y = 71;
         let addr = (&raw const y) as usize;
-        let mut py = PtrMut::from(&mut y);
+        let py = PtrMut::from(&mut y);
         assert_eq!(py.as_ptr() as usize, addr);
 
-        let _ = py.as_ref();
-        let _ = py.reborrow();
         let _ = unsafe { py.promote() };
         let py = PtrMut::from(&mut y);
         let _ = NonNull::<u8>::from(py);
@@ -1366,18 +1437,7 @@ mod tests {
 
         let y: i32 = 71;
         OwningPtr::make(y, |py| {
-            let mut py = py;
-            {
-                let p1 = py.as_ref();
-                assert_eq! {unsafe{ *p1.deref::<i32>() }, y};
-            }
-            {
-                let p2 = py.as_mut();
-                unsafe {
-                    *p2.deref_mut::<i32>() += 3;
-                }
-            }
-            assert_eq!(unsafe { py.read::<i32>() }, 74);
+            assert_eq!(unsafe { py.read::<i32>() }, 71);
         });
 
         let mut z = 123u32;
@@ -1438,9 +1498,7 @@ mod tests {
         let counter = Cell::new(0u32);
         let mut v = MaybeUninit::new(DropCounter(&counter));
         {
-            // create a MovingPtr that will drop the inner value when dropped
             let _mp = unsafe { MovingPtr::from_value(&mut v) };
-            // `_mp` goes out of scope here -> Drop should run
         }
         assert_eq!(counter.get(), 1);
     }
