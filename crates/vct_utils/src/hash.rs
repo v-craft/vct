@@ -94,7 +94,7 @@ impl<V: Copy, H> Copy for Hashed<V, H> {}
 
 impl<V: Eq, H> Eq for Hashed<V, H> {}
 
-/// 一个不带操作的 Hasher 实现，只能使用 writer_u64
+/// 一个不带操作的 Hasher 实现，仅使用 write_u64
 #[derive(Debug, Default)]
 pub struct NoOpHasher {
     hash: u64,
@@ -106,8 +106,12 @@ impl Hasher for NoOpHasher {
         self.hash
     }
 
-    fn write(&mut self, _bytes: &[u8]) {
-        panic!("Can only hash u64 using NoOpHasher");
+    fn write(&mut self, bytes: &[u8]) {
+        // 通常不建议使用此 write ，自定义场景请直接调用 write_64  
+        // 已确定 TypeId 会调用 write_u64 而非此函数
+        self.hash = bytes.iter().fold(self.hash, |hash, b| {
+            hash.rotate_left(8).wrapping_add(*b as u64)
+        });
     }
 
     #[inline]

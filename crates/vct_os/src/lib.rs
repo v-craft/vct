@@ -1,11 +1,19 @@
 #![doc = include_str!("../README.md")]
 #![cfg_attr(docsrs, feature(doc_cfg))]
+#![no_std]
 
-pub mod cell;
+cfg::std!{
+    extern crate std;
+}
+
+cfg::alloc!{
+    extern crate alloc;
+}
+
 pub mod cfg;
-pub mod collections;
-pub mod hash;
 pub mod time;
+pub mod thread;
+pub mod sync;
 
 /// 重导出 web 相关库
 #[doc(hidden)]

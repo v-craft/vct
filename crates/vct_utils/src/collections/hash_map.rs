@@ -45,7 +45,7 @@ impl<K, V> HashMap<K, V, FixedHash> {
     /// # 例
     ///
     /// ```rust
-    /// # use vct_platform::collections::HashMap;
+    /// # use vct_os::collections::HashMap;
     ///
     /// let map = HashMap::new();
     /// # // 文档测试
@@ -63,7 +63,7 @@ impl<K, V> HashMap<K, V, FixedHash> {
     /// # 例
     ///
     /// ```rust
-    /// # use vct_platform::collections::HashMap;
+    /// # use vct_os::collections::HashMap;
     ///
     /// let map = HashMap::with_capacity(5);
     /// # // 文档测试
@@ -332,8 +332,8 @@ impl<K, V, S> HashMap<K, V, S> {
     /// # 例
     ///
     /// ```rust
-    /// # use vct_platform::collections::HashMap;
-    /// # use vct_platform::hash::FixedHash as SomeHasher;
+    /// # use vct_os::collections::HashMap;
+    /// # use vct_os::hash::FixedHash as SomeHasher;
     ///
     /// let map = HashMap::with_hasher(SomeHasher);
     /// # // doc test
@@ -351,8 +351,8 @@ impl<K, V, S> HashMap<K, V, S> {
     /// # 例
     ///
     /// ```rust
-    /// # use vct_platform::collections::HashMap;
-    /// # use vct_platform::hash::FixedHash as SomeHasher;
+    /// # use vct_os::collections::HashMap;
+    /// # use vct_os::hash::FixedHash as SomeHasher;
     ///
     /// let map = HashMap::with_capacity_and_hasher(5, SomeHasher);
     /// # // doc test
@@ -379,7 +379,7 @@ impl<K, V, S> HashMap<K, V, S> {
     /// # 例
     ///
     /// ```rust
-    /// # use vct_platform::collections::HashMap;
+    /// # use vct_os::collections::HashMap;
     /// let map = HashMap::with_capacity(5);
     ///
     /// # // doc test
@@ -396,7 +396,7 @@ impl<K, V, S> HashMap<K, V, S> {
     /// # 例
     ///
     /// ```rust
-    /// # use vct_platform::collections::HashMap;
+    /// # use vct_os::collections::HashMap;
     /// #
     /// let mut map = HashMap::new();
     ///
@@ -419,7 +419,7 @@ impl<K, V, S> HashMap<K, V, S> {
     /// # 例
     ///
     /// ```rust
-    /// # use vct_platform::collections::HashMap;
+    /// # use vct_os::collections::HashMap;
     /// #
     /// let mut map = HashMap::new();
     ///
@@ -442,7 +442,7 @@ impl<K, V, S> HashMap<K, V, S> {
     /// # 例
     ///
     /// ```rust
-    /// # use vct_platform::collections::HashMap;
+    /// # use vct_os::collections::HashMap;
     /// #
     /// let mut map = HashMap::new();
     ///
@@ -465,7 +465,7 @@ impl<K, V, S> HashMap<K, V, S> {
     /// # 例
     ///
     /// ```rust
-    /// # use vct_platform::collections::HashMap;
+    /// # use vct_os::collections::HashMap;
     /// #
     /// let mut map = HashMap::new();
     ///
@@ -488,7 +488,7 @@ impl<K, V, S> HashMap<K, V, S> {
     /// # 例
     ///
     /// ```rust
-    /// # use vct_platform::collections::HashMap;
+    /// # use vct_os::collections::HashMap;
     /// #
     /// let mut map = HashMap::new();
     ///
@@ -511,7 +511,7 @@ impl<K, V, S> HashMap<K, V, S> {
     /// # 例
     ///
     /// ```rust
-    /// # use vct_platform::collections::HashMap;
+    /// # use vct_os::collections::HashMap;
     /// let mut map = HashMap::new();
     ///
     /// assert_eq!(map.len(), 0);
@@ -530,7 +530,7 @@ impl<K, V, S> HashMap<K, V, S> {
     /// # 例
     ///
     /// ```rust
-    /// # use vct_platform::collections::HashMap;
+    /// # use vct_os::collections::HashMap;
     /// let mut map = HashMap::new();
     ///
     /// assert!(map.is_empty());
@@ -549,7 +549,7 @@ impl<K, V, S> HashMap<K, V, S> {
     /// # 例
     ///
     /// ```rust
-    /// # use vct_platform::collections::HashMap;
+    /// # use vct_os::collections::HashMap;
     /// #
     /// let mut map = HashMap::new();
     ///
@@ -573,7 +573,7 @@ impl<K, V, S> HashMap<K, V, S> {
     /// # 例
     ///
     /// ```rust
-    /// # use vct_platform::collections::HashMap;
+    /// # use vct_os::collections::HashMap;
     /// #
     /// let mut map = HashMap::new();
     ///
@@ -598,7 +598,7 @@ impl<K, V, S> HashMap<K, V, S> {
     /// # 例
     ///
     /// ```rust
-    /// # use vct_platform::collections::HashMap;
+    /// # use vct_os::collections::HashMap;
     /// #
     /// let mut map = HashMap::new();
     ///
@@ -626,7 +626,7 @@ impl<K, V, S> HashMap<K, V, S> {
     /// # 例
     ///
     /// ```rust
-    /// # use vct_platform::collections::HashMap;
+    /// # use vct_os::collections::HashMap;
     /// #
     /// let mut map = HashMap::new();
     ///
@@ -648,7 +648,7 @@ impl<K, V, S> HashMap<K, V, S> {
     /// # 例
     ///
     /// ```rust
-    /// # use vct_platform::collections::HashMap;
+    /// # use vct_os::collections::HashMap;
     /// #
     /// let mut map = HashMap::new();
     ///
@@ -670,7 +670,7 @@ impl<K, V, S> HashMap<K, V, S> {
     /// # 例
     ///
     /// ```rust
-    /// # use vct_platform::collections::HashMap;
+    /// # use vct_os::collections::HashMap;
     /// #
     /// let mut map = HashMap::new();
     ///
@@ -692,7 +692,7 @@ impl<K, V, S> HashMap<K, V, S> {
     /// # 例
     ///
     /// ```rust
-    /// # use vct_platform::collections::HashMap;
+    /// # use vct_os::collections::HashMap;
     /// let map: HashMap<&'static str, usize> = HashMap::new();
     /// let map: hashbrown::HashMap<&'static str, usize, _> = map.into_inner();
     /// ```
@@ -712,7 +712,7 @@ where
     /// # 例
     ///
     /// ```rust
-    /// # use vct_platform::collections::HashMap;
+    /// # use vct_os::collections::HashMap;
     /// let mut map = HashMap::with_capacity(5);
     ///
     /// # let mut map: HashMap<(), ()> = map;
@@ -733,7 +733,7 @@ where
     /// # 例
     ///
     /// ```rust
-    /// # use vct_platform::collections::HashMap;
+    /// # use vct_os::collections::HashMap;
     /// let mut map = HashMap::with_capacity(5);
     ///
     /// # let mut map: HashMap<(), ()> = map;
@@ -754,7 +754,7 @@ where
     /// # 例
     ///
     /// ```rust
-    /// # use vct_platform::collections::HashMap;
+    /// # use vct_os::collections::HashMap;
     /// let mut map = HashMap::with_capacity(5);
     ///
     /// map.insert("foo", 0);
@@ -783,7 +783,7 @@ where
     /// # 例
     ///
     /// ```rust
-    /// # use vct_platform::collections::HashMap;
+    /// # use vct_os::collections::HashMap;
     /// let mut map = HashMap::new();
     ///
     /// let value = map.entry("foo").or_insert(0);
@@ -802,7 +802,7 @@ where
     /// # 例
     ///
     /// ```rust
-    /// # use vct_platform::collections::HashMap;
+    /// # use vct_os::collections::HashMap;
     /// let mut map = HashMap::new();
     /// # let mut map: HashMap<&'static str, usize> = map;
     ///
@@ -823,7 +823,7 @@ where
     /// # 例
     ///
     /// ```rust
-    /// # use vct_platform::collections::HashMap;
+    /// # use vct_os::collections::HashMap;
     /// let mut map = HashMap::new();
     ///
     /// map.insert("foo", 0);
@@ -845,7 +845,7 @@ where
     /// # 例
     ///
     /// ```rust
-    /// # use vct_platform::collections::HashMap;
+    /// # use vct_os::collections::HashMap;
     /// let mut map = HashMap::new();
     ///
     /// map.insert("foo", 0);
@@ -865,7 +865,7 @@ where
     /// # 例
     ///
     /// ```rust
-    /// # use vct_platform::collections::HashMap;
+    /// # use vct_os::collections::HashMap;
     /// let mut map = HashMap::new();
     ///
     /// map.insert("foo", 0);
@@ -885,7 +885,7 @@ where
     /// # 例
     ///
     /// ```rust
-    /// # use vct_platform::collections::HashMap;
+    /// # use vct_os::collections::HashMap;
     /// let mut map = HashMap::new();
     ///
     /// map.insert("foo", 0);
@@ -905,7 +905,7 @@ where
     /// # 例
     ///
     /// ```rust
-    /// # use vct_platform::collections::HashMap;
+    /// # use vct_os::collections::HashMap;
     /// let mut map = HashMap::new();
     ///
     /// map.insert("foo", 0);
@@ -925,7 +925,7 @@ where
     /// # 例
     ///
     /// ```rust
-    /// # use vct_platform::collections::HashMap;
+    /// # use vct_os::collections::HashMap;
     /// let mut map = HashMap::new();
     ///
     /// map.insert("foo", 0);
@@ -949,7 +949,7 @@ where
     /// # 例
     ///
     /// ```rust
-    /// # use vct_platform::collections::HashMap;
+    /// # use vct_os::collections::HashMap;
     /// let mut map = HashMap::new();
     ///
     /// map.insert("foo", 0);
@@ -976,7 +976,7 @@ where
     /// # 例
     ///
     /// ```rust
-    /// # use vct_platform::collections::HashMap;
+    /// # use vct_os::collections::HashMap;
     /// let mut map = HashMap::new();
     ///
     /// map.insert("foo", 0);
@@ -993,7 +993,7 @@ where
     /// # 例
     ///
     /// ```rust
-    /// # use vct_platform::collections::HashMap;
+    /// # use vct_os::collections::HashMap;
     /// let mut map = HashMap::new();
     ///
     /// map.try_insert("foo", 0).unwrap();
@@ -1010,7 +1010,7 @@ where
     /// # 例
     ///
     /// ```rust
-    /// # use vct_platform::collections::HashMap;
+    /// # use vct_os::collections::HashMap;
     /// let mut map = HashMap::new();
     ///
     /// map.insert("foo", 0);
@@ -1032,7 +1032,7 @@ where
     /// # 例
     ///
     /// ```rust
-    /// # use vct_platform::collections::HashMap;
+    /// # use vct_os::collections::HashMap;
     /// let mut map = HashMap::new();
     ///
     /// map.insert("foo", 0);
@@ -1054,7 +1054,7 @@ where
     /// # 例
     ///
     /// ```rust
-    /// # use vct_platform::collections::HashMap;
+    /// # use vct_os::collections::HashMap;
     /// let mut map = HashMap::new();
     ///
     /// assert_eq!(map.allocation_size(), 0);

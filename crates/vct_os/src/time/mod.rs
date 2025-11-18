@@ -1,13 +1,16 @@
+
+pub use implementation::Instant;
+
 crate::cfg::switch! {
     crate::cfg::web => {
-        use web_time as time;
+        use web_time as implementation;
     }
     crate::cfg::std => {
-        use std::time;
+        use std::time as implementation;
     }
     _ => {
         compile_error!("This platform is not supported");
     }
 }
 
-pub use time::Instant;
+

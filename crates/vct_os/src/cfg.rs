@@ -3,7 +3,7 @@
 /// # 例
 ///
 /// ```ignore
-/// # use vct_platform::cfg;
+/// # use vct_os::cfg;
 /// let mut x = 0;
 /// assert!( !cfg::disabled!() );
 /// cfg::disabled!(
@@ -24,7 +24,7 @@ pub use crate::disabled;
 /// # 例
 ///
 /// ```ignore
-/// # use vct_platform::cfg;
+/// # use vct_os::cfg;
 /// let mut x = 0;
 /// assert!( cfg::enabled!() );
 /// cfg::enabled!(
@@ -45,7 +45,7 @@ pub use crate::enabled;
 /// # 例
 ///
 /// ```ignore
-/// # use vct_platform::cfg;
+/// # use vct_os::cfg;
 /// let mut x = 0;
 /// cfg::switch! {
 ///     #[cfg(test)] => {
@@ -80,14 +80,12 @@ pub use crate::switch;
 #[doc(inline)]
 pub use crate::define_alias;
 
-pub use enabled as std;
-pub use enabled as alloc;
-
 define_alias! {
+    #[cfg(feature = "std")] => std,
+    #[cfg(feature = "alloc")] => alloc,
+    #[cfg(all(target_arch = "wasm32", feature = "web"))] => web,
     #[cfg(panic = "unwind")] => panic_unwind,
     #[cfg(panic = "abort")] => panic_abort,
-    #[cfg(all(target_arch = "wasm32", feature = "web"))] => web,
-    #[cfg(target_has_atomic = "ptr")] => arc,
 }
 
 #[doc(hidden)]
@@ -151,11 +149,7 @@ macro_rules! define_alias {
     ) => {
         $crate::define_alias! {
             #[cfg($meta)] => { $p }
-        }
-        $crate::define_alias! {
-            $(
-                $($rest)+
-            )?
+            $( $($rest)+ )?
         }
     };
     (

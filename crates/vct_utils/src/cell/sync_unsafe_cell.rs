@@ -68,7 +68,7 @@ impl<T> SyncUnsafeCell<[T]> {
     /// # 例
     ///
     /// ```
-    /// # use vct_platform::cell::SyncUnsafeCell;
+    /// # use vct_os::cell::SyncUnsafeCell;
     ///
     /// let slice: &mut [i32] = &mut [1, 2, 3];
     /// let cell_slice: &SyncUnsafeCell<[i32]> = SyncUnsafeCell::from_mut(slice);
