@@ -228,6 +228,10 @@ version = "0.1.0"
 [[package]]
 name = "vct_reflect"
 version = "0.1.0"
+dependencies = [
+ "vct_os",
+ "vct_utils",
+]
 
 [[package]]
 name = "vct_tasks"
