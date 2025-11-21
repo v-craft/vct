@@ -1,12 +1,11 @@
-use core::default::Default;
-use vct_os::sync::atomic::{AtomicBool, Ordering};
+use crate::sync::atomic;
 
 /// 一个 [`AtomicBool`] 的封装，一次性的标志位
 ///
 /// # 例
 ///
 /// ```
-/// # use vct_utils::OnceFlag;
+/// # use vct_os::sync::OnceFlag;
 ///
 /// let flag = OnceFlag::new();
 /// let mut count = 0;
@@ -25,17 +24,17 @@ use vct_os::sync::atomic::{AtomicBool, Ordering};
 /// # }
 /// # assert_eq!(count, 2);
 /// ```
-pub struct OnceFlag(AtomicBool);
+pub struct OnceFlag(atomic::AtomicBool);
 
 impl OnceFlag {
     /// 创建新对象，初始是 `true`
     pub const fn new() -> Self {
-        Self(AtomicBool::new(true))
+        Self(atomic::AtomicBool::new(true))
     }
 
     /// 将自身置为 false，并返回旧值
     pub fn set(&self) -> bool {
-        self.0.swap(false, Ordering::Relaxed)
+        self.0.swap(false, atomic::Ordering::Relaxed)
     }
 }
 
@@ -51,7 +50,7 @@ impl Default for OnceFlag {
 /// # 例
 ///
 /// ```
-/// # use vct_utils::once;
+/// # use vct_os::sync::once;
 ///
 /// let mut count = 0;
 ///
@@ -65,7 +64,7 @@ impl Default for OnceFlag {
 #[macro_export]
 macro_rules! once {
     ($expression:expr) => {{
-        static SHOULD_FIRE: $crate::OnceFlag = $crate::OnceFlag::new();
+        static SHOULD_FIRE: $crate::sync::OnceFlag = $crate::sync::OnceFlag::new();
         if SHOULD_FIRE.set() {
             $expression;
         }

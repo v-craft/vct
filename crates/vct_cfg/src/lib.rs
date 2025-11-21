@@ -1,3 +1,7 @@
+#![doc = include_str!("../README.md")]
+#![cfg_attr(docsrs, feature(doc_cfg))]
+#![no_std]
+
 /// 此宏用于表示关闭的条件编译块
 ///
 /// # 例
@@ -16,8 +20,13 @@
 /// cfg::disabled!{ x += 10; };
 /// assert_eq!(x, 1);
 /// ```
-#[doc(inline)]
-pub use crate::disabled;
+#[doc(hidden)]
+#[macro_export]
+macro_rules! disabled {
+    () => { false };
+    (if { $($p:tt)* } else { $($n:tt)* }) => { $($n)* };
+    ($($p:tt)*) => {};
+}
 
 /// 此宏用于表示开启的条件编译块
 ///
@@ -37,8 +46,13 @@ pub use crate::disabled;
 /// cfg::enabled!{ x += 10; };
 /// assert_eq!(x, 11);
 /// ```
-#[doc(inline)]
-pub use crate::enabled;
+#[doc(hidden)]
+#[macro_export]
+macro_rules! enabled {
+    () => { true };
+    (if { $($p:tt)* } else { $($n:tt)* }) => { $($p)* };
+    ($($p:tt)*) => { $($p)* };
+}
 
 /// 一个类 switch 的条件编译宏
 ///
@@ -59,50 +73,6 @@ pub use crate::enabled;
 ///     }
 /// }
 /// ```
-#[doc(inline)]
-pub use crate::switch;
-
-/// 用于给编译特性定义 `cfg::enabled` 类似的宏
-///
-/// # 例
-///
-/// ```ignore
-/// cfg::define_alias!{
-///     #[cfg(test)] => enable_test,
-/// };
-///
-/// let mut x = false;
-/// enable_test!{ x = true; };
-/// ```
-///
-/// 这会提供一个 `enable_test!` 宏。如果 `#[cfg(test)]` 成立，
-/// 则其等效于 `cfg::enabled` ，否则等效于 `cfg::disabled` 。
-#[doc(inline)]
-pub use crate::define_alias;
-
-define_alias! {
-    #[cfg(feature = "std")] => std,
-    #[cfg(all(target_arch = "wasm32", feature = "web"))] => web,
-    #[cfg(panic = "unwind")] => panic_unwind,
-    #[cfg(panic = "abort")] => panic_abort,
-}
-
-#[doc(hidden)]
-#[macro_export]
-macro_rules! disabled {
-    () => { false };
-    (if { $($p:tt)* } else { $($n:tt)* }) => { $($n)* };
-    ($($p:tt)*) => {};
-}
-
-#[doc(hidden)]
-#[macro_export]
-macro_rules! enabled {
-    () => { true };
-    (if { $($p:tt)* } else { $($n:tt)* }) => { $($p)* };
-    ($($p:tt)*) => { $($p)* };
-}
-
 #[doc(hidden)]
 #[macro_export]
 macro_rules! switch {
@@ -139,6 +109,21 @@ macro_rules! switch {
     }
 }
 
+/// 用于给编译特性定义 `cfg::enabled` 类似的宏
+///
+/// # 例
+///
+/// ```ignore
+/// cfg::define_alias!{
+///     #[cfg(test)] => enable_test,
+/// };
+///
+/// let mut x = false;
+/// enable_test!{ x = true; };
+/// ```
+///
+/// 这会提供一个 `enable_test!` 宏。如果 `#[cfg(test)]` 成立，
+/// 则其等效于 `cfg::enabled` ，否则等效于 `cfg::disabled` 。
 #[doc(hidden)]
 #[macro_export]
 macro_rules! define_alias {
@@ -188,9 +173,15 @@ macro_rules! define_alias {
     }
 }
 
+define_alias! {
+    #[cfg(feature = "std")] => std,
+    #[cfg(panic = "unwind")] => panic_unwind,
+    #[cfg(panic = "abort")] => panic_abort,
+}
+
 #[cfg(test)]
 mod test {
-    use crate::cfg;
+    use crate as cfg;
 
     #[test]
     fn cfg_disabled() {

@@ -5,9 +5,9 @@
 extern crate alloc;
 
 pub mod cfg {
-    pub use vct_os::cfg::std;
+    pub use vct_cfg::std;
 
-    vct_os::cfg::define_alias! {
+    vct_cfg::define_alias! {
         #[cfg(feature = "parallel")] => parallel
     }
 }
@@ -30,19 +30,18 @@ pub mod hash;
 mod default;
 mod maps;
 mod on_drop;
-mod once_flag;
 
 pub use default::default;
 pub use maps::*;
 pub use on_drop::OnDrop;
-pub use once_flag::OnceFlag;
 
 pub mod prelude {
     pub use alloc::{
         borrow::ToOwned, boxed::Box, format, string::String, string::ToString, vec, vec::Vec,
     };
 
-    pub use crate::debug_info::DebugName;
     pub use crate::default;
-    pub use disqualified::ShortName;
+
+    // pub use disqualified::ShortName;
+    // pub use crate::debug_info::DebugName;
 }

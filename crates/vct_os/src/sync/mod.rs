@@ -12,6 +12,10 @@ pub mod atomic {
     pub use core::sync::atomic::Ordering;
 }
 
+mod once_flag;
+pub use crate::once;
+pub use once_flag::OnceFlag;
+
 crate::cfg::switch! {
     crate::cfg::std => {
         use std::sync as sync_impl;

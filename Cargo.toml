@@ -6,6 +6,7 @@ edition = "2024"
 [workspace]
 resolver = "3"
 members = [
+    "crates/vct_cfg",
     "crates/vct_ecs",
     "crates/vct_os",
     "crates/vct_ptr",
@@ -15,6 +16,7 @@ members = [
 ]
 
 [dependencies]
+vct_cfg = { path = "crates/vct_cfg" }
 vct_ptr = { path = "crates/vct_ptr" }
 vct_os = { path = "crates/vct_os" }
 vct_utils = { path = "crates/vct_utils" }
