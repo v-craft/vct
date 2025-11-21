@@ -4,7 +4,7 @@ use core::{
     hash::Hash,
 };
 
-use crate::{
+use crate::type_info::{
     TypePath, TypePathTable
 };
 
@@ -107,7 +107,7 @@ macro_rules! impl_type_fn {
     ($self:ident => $expr:expr) => {
         /// 获取底层类型的 [`Type`] 表示, expr 尽量简单
         #[inline]
-        pub fn ty($self: &Self) -> &$crate::Type {
+        pub fn ty($self: &Self) -> &$crate::type_info::Type {
             $expr
         }
 
@@ -125,7 +125,7 @@ macro_rules! impl_type_fn {
 
         /// 获取 [`TypePathTable`]
         #[inline]
-        pub fn type_path_table(&self) -> &$crate::TypePathTable {
+        pub fn type_path_table(&self) -> &$crate::type_info::TypePathTable {
             &self.ty().type_path_table()
         }
 

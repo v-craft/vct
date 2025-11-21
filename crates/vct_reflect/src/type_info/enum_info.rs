@@ -3,15 +3,13 @@ use alloc::{
 };
 use vct_os::sync::Arc;
 use vct_utils::collections::HashMap;
-use crate::{
-    CustomAttributes, Generics, Type, VariantInfo, 
-    TypePath,
-    type_info::{
-        attributes::impl_custom_attributes_fn, 
-        docs_macro::impl_docs_fn, 
-        generics::impl_generic_fn, 
-        type_struct::impl_type_fn
-    }
+use crate::type_info::{
+    CustomAttributes, Generics, Type,
+    VariantInfo, TypePath,
+    attributes::impl_custom_attributes_fn, 
+    docs_macro::impl_docs_fn, 
+    generics::impl_generic_fn, 
+    type_struct::impl_type_fn,
 };
 
 

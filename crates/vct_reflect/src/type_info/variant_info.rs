@@ -2,12 +2,10 @@ use core::{fmt, error};
 use alloc::boxed::Box;
 use vct_os::sync::Arc;
 use vct_utils::collections::HashMap;
-use crate::{
+use crate::type_info::{
     CustomAttributes, NamedField, UnnamedField, 
-    type_info::{
-        attributes::impl_custom_attributes_fn,
-        docs_macro::impl_docs_fn
-    }
+    attributes::impl_custom_attributes_fn,
+    docs_macro::impl_docs_fn,
 };
 
 /// 用于表示变体类型的枚举
@@ -255,26 +253,20 @@ impl UnitVariantInfo {
 
 /// 用于表示类型错误的枚举
 #[derive(Debug)]
-pub enum VariantInfoError {
-    TypeMismatch {
-        /// 预期类型
-        expected: VariantType,
-        /// 实际类型
-        received: VariantType,
-    },
+pub struct VariantTypeError {
+    /// 预期类型
+    expected: VariantType,
+    /// 实际类型
+    received: VariantType,
 }
 
-impl fmt::Display for VariantInfoError {
+impl fmt::Display for VariantTypeError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            VariantInfoError::TypeMismatch { expected, received } => {
-                write!(f, "variant type mismatch: expected {:?}, received {:?}", expected, received)
-            }
-        }
+        write!(f, "variant type mismatch: expected {:?}, received {:?}", self.expected, self.received)
     }
 }
 
-impl error::Error for VariantInfoError {}
+impl error::Error for VariantTypeError {}
 
 
 /// 存储编译时枚举变体项信息的容器
@@ -294,10 +286,10 @@ macro_rules! impl_cast_fn {
     ($name:ident : $kind:ident => $info:ident) => {
         /// 类型转换
         #[inline]
-        pub fn $name(&self) -> Result<&$info, VariantInfoError> {
+        pub fn $name(&self) -> Result<&$info, VariantTypeError> {
             match self {
                 Self::$kind(info) => Ok(info),
-                _ => Err(VariantInfoError::TypeMismatch {
+                _ => Err(VariantTypeError {
                     expected: VariantType::$kind,
                     received: self.variant_type(),
                 }),

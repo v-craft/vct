@@ -2,9 +2,10 @@ use alloc::boxed::Box;
 use vct_utils::collections::HashMap;
 use vct_os::sync::Arc;
 use crate::{
-    CustomAttributes, Generics, NamedField, 
-    Reflect, Type, TypePath, 
+    Reflect,
     type_info::{
+        CustomAttributes, Generics, NamedField, 
+        Type, TypePath, 
         docs_macro::impl_docs_fn,
         attributes::impl_custom_attributes_fn, 
         generics::impl_generic_fn, 

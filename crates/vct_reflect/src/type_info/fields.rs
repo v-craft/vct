@@ -4,7 +4,13 @@ use alloc::borrow::Cow;
 
 use vct_os::sync::Arc;
 
-use crate::{CustomAttributes, MaybeTyped, Type, TypeInfo, TypePath, type_info::{attributes::impl_custom_attributes_fn, docs_macro::impl_docs_fn, type_struct::impl_type_fn}};
+use crate::type_info::{
+    CustomAttributes, MaybeTyped,
+    Type, TypeInfo, TypePath, 
+    attributes::impl_custom_attributes_fn,
+    docs_macro::impl_docs_fn,
+    type_struct::impl_type_fn,
+};
 
 /// 命名字段，如结构体的字段
 #[derive(Clone, Debug)]

@@ -1,8 +1,9 @@
 use alloc::boxed::Box;
 use crate::{
-    Generics, UnnamedField, 
-    Reflect, Type, TypePath, 
+    Reflect, 
     type_info::{
+        Generics, UnnamedField, 
+        Type, TypePath, 
         docs_macro::impl_docs_fn,
         generics::impl_generic_fn, 
         type_struct::impl_type_fn

@@ -1,11 +1,9 @@
-use crate::{
+use crate::type_info::{
     Generics, MaybeTyped,
     Type, TypePath, TypeInfo,
-    type_info::{
-        docs_macro::impl_docs_fn,
-        generics::impl_generic_fn, 
-        type_struct::impl_type_fn
-    }
+    docs_macro::impl_docs_fn,
+    generics::impl_generic_fn, 
+    type_struct::impl_type_fn,
 };
 
 #[derive(Clone, Debug)]

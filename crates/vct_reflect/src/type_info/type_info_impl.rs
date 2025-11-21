@@ -34,28 +34,18 @@ impl fmt::Display for ReflectKind {
 }
 
 #[derive(Debug)]
-pub enum TypeInfoError {
-    /// Caused when a type was expected to be of a certain [kind], but was not.
-    ///
-    /// [kind]: ReflectKind
-    // #[error("kind mismatch: expected {expected:?}, received {received:?}")]
-    KindMismatch {
-        expected: ReflectKind,
-        received: ReflectKind,
-    },
+pub struct ReflectKindError {
+    pub expected: ReflectKind,
+    pub received: ReflectKind,
 }
 
-impl fmt::Display for TypeInfoError {
+impl fmt::Display for ReflectKindError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            TypeInfoError::KindMismatch { expected, received } => {
-                write!(f, "kind mismatch: expected {:?}, received {:?}", expected, received)
-            }
-        }
+        write!(f, "kind mismatch: expected {:?}, received {:?}", self.expected, self.received)
     }
 }
 
-impl error::Error for TypeInfoError {}
+impl error::Error for ReflectKindError {}
 
 #[derive(Debug, Clone)]
 pub enum TypeInfo {
@@ -83,10 +73,10 @@ macro_rules! impl_cast_method {
     ($name:ident : $kind:ident => $info:ident) => {
         /// 类型转换函数
         #[inline]
-        pub fn $name(&self) -> Result<&$info, TypeInfoError> {
+        pub fn $name(&self) -> Result<&$info, ReflectKindError> {
             match self {
                 Self::$kind(info) => Ok(info),
-                _ => Err(TypeInfoError::KindMismatch {
+                _ => Err(ReflectKindError{
                     expected: ReflectKind::$kind,
                     received: self.kind(),
                 }),

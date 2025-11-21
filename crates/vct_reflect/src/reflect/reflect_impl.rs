@@ -1,11 +1,13 @@
-use core::any::Any;
-use core::fmt::Debug;
-use crate::PartialReflect;
+use core::{
+    fmt,
+    any::Any
+};
+use crate::type_data::PartialReflect;
 
 pub trait Reflect: PartialReflect /*+ DynamicTyped*/ + Any{
     fn as_any(&self) -> &dyn Any;
 
-    fn debug(&self, _f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+    fn debug(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
         unimplemented!()
     }
 }
@@ -18,8 +20,9 @@ impl dyn Reflect {
     }
 }
 
-impl Debug for dyn Reflect {
-    fn fmt(&self, _f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+impl fmt::Debug for dyn Reflect {
+    fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
         unimplemented!()
     }
 }
+

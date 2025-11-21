@@ -1,6 +1,4 @@
 // 用于简化重复代码的宏
-// 
-// 在不启用 `reflect_docs` 时，宏内容为空
 mod docs_macro;
 
 // 获取类型路径名的容器
@@ -64,7 +62,7 @@ pub use set_info::SetInfo;
 // 存储“变体”类型的容器（表示 enum 中的一种情况）
 mod variant_info;
 pub use variant_info::{
-    VariantInfo, VariantType, VariantInfoError,
+    VariantInfo, VariantType, VariantTypeError,
     StructVariantInfo, TupleVariantInfo, UnitVariantInfo,
 };
 
@@ -75,9 +73,11 @@ pub use enum_info::EnumInfo;
 // TypeInfo
 mod type_info_impl;
 pub use type_info_impl::{
-    TypeInfo, TypeInfoError, ReflectKind,
+    TypeInfo, ReflectKindError, ReflectKind,
 };
 
-
+// 获取 TypeInfo 的 trait
 mod typed;
-pub use typed::*;
+pub use typed::{
+    Typed, DynamicTyped, MaybeTyped,
+};

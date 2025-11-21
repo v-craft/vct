@@ -1,7 +1,7 @@
 use crate::{
-    Generics, Reflect,
-    Type, TypePath, 
+     Reflect,
     type_info::{
+        Type, TypePath, Generics,
         docs_macro::impl_docs_fn,
         generics::impl_generic_fn,
         type_struct::impl_type_fn,

@@ -112,7 +112,7 @@ macro_rules! impl_custom_attributes_fn {
     ($self:ident => $expr:expr) => {
         /// 根据自身返回属性
         #[inline]
-        pub fn custom_attributes($self: &Self) -> &$crate::CustomAttributes {
+        pub fn custom_attributes($self: &Self) -> &$crate::type_info::CustomAttributes {
             $expr
         }
 

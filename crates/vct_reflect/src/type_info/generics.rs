@@ -2,7 +2,13 @@ use core::ops::Deref;
 use alloc::{borrow::Cow, boxed::Box};
 use vct_os::sync::Arc;
 
-use crate::{Reflect, Type, TypePath, type_info::type_struct::impl_type_fn};
+use crate::{
+    Reflect, 
+    type_info::{
+        Type, TypePath,
+        type_struct::impl_type_fn,
+    },
+};
 
 /// 存储泛型类型参数信息的结构体
 #[derive(Clone, Debug)]
@@ -195,7 +201,7 @@ macro_rules! impl_generic_fn {
         /// 替换自身的泛型信息结构体
         pub fn with_generics(
             mut self, 
-            generics: $crate::Generics
+            generics: $crate::type_info::Generics
         ) -> Self {
             self.$field = generics;
             self
@@ -203,7 +209,7 @@ macro_rules! impl_generic_fn {
     };
     ($self:ident => $expr:expr) => {
         /// 根据表达式获取 self 中的泛型信息结构体
-        pub fn generics($self: &Self) -> &$crate::Generics {
+        pub fn generics($self: &Self) -> &$crate::type_info::Generics {
             $expr
         }
     };
