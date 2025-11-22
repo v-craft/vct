@@ -1,4 +1,4 @@
-use crate::type_info::{
+use crate::info::{
     Generics, MaybeTyped,
     Type, TypePath, TypeInfo,
     docs_macro::impl_docs_fn,
@@ -6,19 +6,19 @@ use crate::type_info::{
     type_struct::impl_type_fn,
 };
 
-/// 存储编译时数组信息的容器
+
+/// 存储编译时列表信息的容器
 #[derive(Clone, Debug)]
-pub struct ArrayInfo {
+pub struct ListInfo {
     ty: Type,
     generics: Generics,
     item_info: fn() -> Option<&'static TypeInfo>,
     item_ty: Type,
-    capacity: usize,
     #[cfg(feature = "reflect_docs")]
     docs: Option<&'static str>,
 }
 
-impl ArrayInfo {
+impl ListInfo {
     impl_docs_fn!(docs);
     impl_type_fn!(ty);
     impl_generic_fn!(generics);
@@ -26,25 +26,17 @@ impl ArrayInfo {
     /// 创建新容器
     #[inline]
     pub fn new<
-        TArray: TypePath /*+ Array*/,
-        TItem: MaybeTyped + TypePath /*+ Reflect*/,
-    >(capacity: usize) -> Self {
+        TList: TypePath /* + List */,
+        TItem: MaybeTyped + TypePath /* + FromReflect */,
+    >() -> Self {
         Self {
-            ty: Type::of::<TArray>(),
+            ty: Type::of::<TList>(),
             generics: Generics::new(),
             item_info: TItem::maybe_type_info,
             item_ty: Type::of::<TItem>(),
-            capacity,
             #[cfg(feature = "reflect_docs")]
             docs: None,
         }
-    }
-
-
-    /// 获取数组容量（固定）
-    #[inline]
-    pub fn capacity(&self) -> usize {
-        self.capacity
     }
 
     /// 获取列表项的类型信息

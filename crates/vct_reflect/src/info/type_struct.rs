@@ -4,7 +4,7 @@ use core::{
     hash::Hash,
 };
 
-use crate::type_info::{
+use crate::info::{
     TypePath, TypePathTable
 };
 
@@ -102,12 +102,12 @@ impl Debug for Type {
 // 用在类型的 impl 块中，要求类型的某个字段是 `Type`
 macro_rules! impl_type_fn {
     ($field:ident) => {
-        $crate::type_info::type_struct::impl_type_fn!(self => &self.$field);
+        $crate::info::type_struct::impl_type_fn!(self => &self.$field);
     };
     ($self:ident => $expr:expr) => {
         /// 获取底层类型的 [`Type`] 表示, expr 尽量简单
         #[inline]
-        pub fn ty($self: &Self) -> &$crate::type_info::Type {
+        pub fn ty($self: &Self) -> &$crate::info::Type {
             $expr
         }
 
@@ -125,7 +125,7 @@ macro_rules! impl_type_fn {
 
         /// 获取 [`TypePathTable`]
         #[inline]
-        pub fn type_path_table(&self) -> &$crate::type_info::TypePathTable {
+        pub fn type_path_table(&self) -> &$crate::info::TypePathTable {
             &self.ty().type_path_table()
         }
 

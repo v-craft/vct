@@ -3,7 +3,7 @@ use vct_utils::collections::HashMap;
 use vct_os::sync::Arc;
 use crate::{
     Reflect,
-    type_info::{
+    info::{
         CustomAttributes, Generics, NamedField, 
         Type, TypePath, 
         docs_macro::impl_docs_fn,

@@ -1,7 +1,7 @@
 use alloc::boxed::Box;
 use crate::{
     Reflect, 
-    type_info::{
+    info::{
         Generics, UnnamedField, 
         Type, TypePath, 
         docs_macro::impl_docs_fn,

@@ -3,7 +3,7 @@ use alloc::{
 };
 use vct_os::sync::Arc;
 use vct_utils::collections::HashMap;
-use crate::type_info::{
+use crate::info::{
     CustomAttributes, Generics, Type,
     VariantInfo, TypePath,
     attributes::impl_custom_attributes_fn, 

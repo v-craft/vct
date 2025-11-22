@@ -4,7 +4,7 @@ use alloc::borrow::Cow;
 
 use vct_os::sync::Arc;
 
-use crate::type_info::{
+use crate::info::{
     CustomAttributes, MaybeTyped,
     Type, TypeInfo, TypePath, 
     attributes::impl_custom_attributes_fn,

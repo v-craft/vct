@@ -1,5 +1,5 @@
 use core::{fmt, error, any::{Any, TypeId}};
-use crate::type_info::{
+use crate::info::{
     ArrayInfo, EnumInfo, ListInfo, MapInfo, OpaqueInfo, SetInfo, StructInfo, TupleInfo, TupleStructInfo, Type, TypePathTable, generics::impl_generic_fn
 };
 

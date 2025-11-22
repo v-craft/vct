@@ -4,7 +4,7 @@ use vct_os::sync::Arc;
 
 use crate::{
     Reflect, 
-    type_info::{
+    info::{
         Type, TypePath,
         type_struct::impl_type_fn,
     },
@@ -196,12 +196,12 @@ impl Deref for Generics {
 
 macro_rules! impl_generic_fn {
     ($field:ident) => {
-        $crate::type_info::generics::impl_generic_fn!(self => &self.$field);
+        $crate::info::generics::impl_generic_fn!(self => &self.$field);
 
         /// 替换自身的泛型信息结构体
         pub fn with_generics(
             mut self, 
-            generics: $crate::type_info::Generics
+            generics: $crate::info::Generics
         ) -> Self {
             self.$field = generics;
             self
@@ -209,7 +209,7 @@ macro_rules! impl_generic_fn {
     };
     ($self:ident => $expr:expr) => {
         /// 根据表达式获取 self 中的泛型信息结构体
-        pub fn generics($self: &Self) -> &$crate::type_info::Generics {
+        pub fn generics($self: &Self) -> &$crate::info::Generics {
             $expr
         }
     };

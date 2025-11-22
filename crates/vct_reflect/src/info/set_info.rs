@@ -1,4 +1,4 @@
-use crate::type_info::{
+use crate::info::{
     Type, Generics, TypePath,
     docs_macro::impl_docs_fn,
     generics::impl_generic_fn, 

@@ -1,7 +1,7 @@
 use core::{fmt, error};
 use alloc::boxed::Box;
 use crate::{
-    type_info::{
+    info::{
         ReflectKindError,
         ReflectKind,
     },

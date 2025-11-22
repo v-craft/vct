@@ -8,9 +8,10 @@ extern crate alloc;
 mod is;
 pub use is::*;
 
-pub mod type_info;
-pub mod type_data;
+pub mod info;
+pub mod ops;
+pub mod cell;
 
 mod reflect;
 pub use reflect::*;
-
+// PartialReflect, Reflect,

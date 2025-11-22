@@ -1,7 +1,6 @@
 use crate::{
-    Reflect,
-    type_data::PartialReflect,
-    type_info::{
+    Reflect, PartialReflect,
+    info::{
         TypePath, 
         TypeInfo,
     },

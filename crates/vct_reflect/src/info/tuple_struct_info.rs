@@ -3,7 +3,7 @@ use alloc::boxed::Box;
 use vct_os::sync::Arc;
 use crate::{
     Reflect, 
-    type_info::{
+    info::{
         Type, Generics, UnnamedField,
         CustomAttributes, TypePath,
         docs_macro::impl_docs_fn,

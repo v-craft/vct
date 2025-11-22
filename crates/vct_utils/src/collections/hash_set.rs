@@ -45,7 +45,7 @@ impl<T> HashSet<T, FixedHash> {
     /// # 例
     ///
     /// ```rust
-    /// # use bevy_platform::collections::HashSet;
+    /// # use vct_utils::collections::HashSet;
     /// #
     /// let map = HashSet::new();
     /// #
@@ -63,7 +63,7 @@ impl<T> HashSet<T, FixedHash> {
     /// # 例
     ///
     /// ```rust
-    /// # use bevy_platform::collections::HashSet;
+    /// # use vct_utils::collections::HashSet;
     /// #
     /// let map = HashSet::with_capacity(5);
     /// #
@@ -317,7 +317,7 @@ impl<T, S> HashSet<T, S> {
     /// # 例
     ///
     /// ```rust
-    /// # use bevy_platform::collections::HashSet;
+    /// # use vct_utils::collections::HashSet;
     /// let map = HashSet::with_capacity(5);
     ///
     /// # let map: HashSet<()> = map;
@@ -334,7 +334,7 @@ impl<T, S> HashSet<T, S> {
     /// # 例
     ///
     /// ```rust
-    /// # use bevy_platform::collections::HashSet;
+    /// # use vct_utils::collections::HashSet;
     /// #
     /// let mut map = HashSet::new();
     ///
@@ -358,7 +358,7 @@ impl<T, S> HashSet<T, S> {
     /// # 例
     ///
     /// ```rust
-    /// # use bevy_platform::collections::HashSet;
+    /// # use vct_utils::collections::HashSet;
     /// let mut map = HashSet::new();
     ///
     /// assert_eq!(map.len(), 0);
@@ -377,7 +377,7 @@ impl<T, S> HashSet<T, S> {
     /// # 例
     ///
     /// ```rust
-    /// # use bevy_platform::collections::HashSet;
+    /// # use vct_utils::collections::HashSet;
     /// let mut map = HashSet::new();
     ///
     /// assert!(map.is_empty());
@@ -396,7 +396,7 @@ impl<T, S> HashSet<T, S> {
     /// # 例
     ///
     /// ```rust
-    /// # use bevy_platform::collections::HashSet;
+    /// # use vct_utils::collections::HashSet;
     /// #
     /// let mut map = HashSet::new();
     ///
@@ -421,7 +421,7 @@ impl<T, S> HashSet<T, S> {
     /// # 例
     ///
     /// ```rust
-    /// # use bevy_platform::collections::HashSet;
+    /// # use vct_utils::collections::HashSet;
     /// #
     /// let mut map = HashSet::new();
     ///
@@ -446,7 +446,7 @@ impl<T, S> HashSet<T, S> {
     /// # 例
     ///
     /// ```rust
-    /// # use bevy_platform::collections::HashSet;
+    /// # use vct_utils::collections::HashSet;
     /// #
     /// let mut map = HashSet::new();
     ///
@@ -474,7 +474,7 @@ impl<T, S> HashSet<T, S> {
     /// # 例
     ///
     /// ```rust
-    /// # use bevy_platform::collections::HashSet;
+    /// # use vct_utils::collections::HashSet;
     /// #
     /// let mut map = HashSet::new();
     ///
@@ -496,8 +496,8 @@ impl<T, S> HashSet<T, S> {
     /// # 例
     ///
     /// ```rust
-    /// # use bevy_platform::collections::HashSet;
-    /// # use bevy_platform::hash::FixedHash as SomeHasher;
+    /// # use vct_utils::collections::HashSet;
+    /// # use vct_utils::hash::FixedHash as SomeHasher;
     ///
     /// let map = HashSet::with_hasher(SomeHasher);
     /// #
@@ -515,8 +515,8 @@ impl<T, S> HashSet<T, S> {
     /// # 例
     ///
     /// ```rust
-    /// # use bevy_platform::collections::HashSet;
-    /// # use bevy_platform::hash::FixedHash as SomeHasher;
+    /// # use vct_utils::collections::HashSet;
+    /// # use vct_utils::hash::FixedHash as SomeHasher;
     ///
     /// let map = HashSet::with_capacity_and_hasher(5, SomeHasher);
     /// #
@@ -540,7 +540,7 @@ impl<T, S> HashSet<T, S> {
     /// # 例
     ///
     /// ```rust
-    /// # use bevy_platform::collections::HashSet;
+    /// # use vct_utils::collections::HashSet;
     /// let map: HashSet<&'static str> = HashSet::new();
     /// let map: hashbrown::HashSet<&'static str, _> = map.into_inner();
     /// ```
@@ -560,7 +560,7 @@ where
     /// # 例
     ///
     /// ```rust
-    /// # use bevy_platform::collections::HashSet;
+    /// # use vct_utils::collections::HashSet;
     /// let mut map = HashSet::with_capacity(5);
     ///
     /// # let mut map: HashSet<()> = map;
@@ -581,7 +581,7 @@ where
     /// # 例
     ///
     /// ```rust
-    /// # use bevy_platform::collections::HashSet;
+    /// # use vct_utils::collections::HashSet;
     /// let mut map = HashSet::with_capacity(5);
     ///
     /// # let mut map: HashSet<()> = map;
@@ -602,7 +602,7 @@ where
     /// # 例
     ///
     /// ```rust
-    /// # use bevy_platform::collections::HashSet;
+    /// # use vct_utils::collections::HashSet;
     /// let mut map = HashSet::with_capacity(5);
     ///
     /// map.insert("foo");
@@ -655,7 +655,7 @@ where
     /// # 例
     ///
     /// ```rust
-    /// # use bevy_platform::collections::HashSet;
+    /// # use vct_utils::collections::HashSet;
     /// let mut map = HashSet::new();
     ///
     /// map.insert("foo");
@@ -675,7 +675,7 @@ where
     /// # 例
     ///
     /// ```rust
-    /// # use bevy_platform::collections::HashSet;
+    /// # use vct_utils::collections::HashSet;
     /// let mut map = HashSet::new();
     ///
     /// map.insert("foo");
@@ -695,7 +695,7 @@ where
     /// # 例
     ///
     /// ```rust
-    /// # use bevy_platform::collections::HashSet;
+    /// # use vct_utils::collections::HashSet;
     /// let mut map = HashSet::new();
     ///
     /// assert_eq!(map.get_or_insert("foo"), &"foo");
@@ -710,7 +710,7 @@ where
     /// # 例
     ///
     /// ```rust
-    /// # use bevy_platform::collections::HashSet;
+    /// # use vct_utils::collections::HashSet;
     /// let mut map = HashSet::new();
     ///
     /// assert_eq!(map.get_or_insert_with(&"foo", |_| "foo"), &"foo");
@@ -729,7 +729,7 @@ where
     /// # 例
     ///
     /// ```rust
-    /// # use bevy_platform::collections::HashSet;
+    /// # use vct_utils::collections::HashSet;
     /// let mut map = HashSet::new();
     ///
     /// let value = map.entry("foo").or_insert();
@@ -764,7 +764,7 @@ where
     /// # 例
     ///
     /// ```rust
-    /// # use bevy_platform::collections::HashSet;
+    /// # use vct_utils::collections::HashSet;
     /// let mut map = HashSet::new();
     ///
     /// map.insert("foo");
@@ -781,7 +781,7 @@ where
     /// # 例
     ///
     /// ```rust
-    /// # use bevy_platform::collections::HashSet;
+    /// # use vct_utils::collections::HashSet;
     /// let mut map = HashSet::new();
     ///
     /// map.insert("foo");
@@ -798,7 +798,7 @@ where
     /// # 例
     ///
     /// ```rust
-    /// # use bevy_platform::collections::HashSet;
+    /// # use vct_utils::collections::HashSet;
     /// let mut map = HashSet::new();
     ///
     /// map.insert("foo");
@@ -820,7 +820,7 @@ where
     /// # 例
     ///
     /// ```rust
-    /// # use bevy_platform::collections::HashSet;
+    /// # use vct_utils::collections::HashSet;
     /// let mut map = HashSet::new();
     ///
     /// map.insert("foo");
@@ -842,7 +842,7 @@ where
     /// # 例
     ///
     /// ```rust
-    /// # use bevy_platform::collections::HashSet;
+    /// # use vct_utils::collections::HashSet;
     /// let mut map = HashSet::new();
     ///
     /// assert_eq!(map.allocation_size(), 0);

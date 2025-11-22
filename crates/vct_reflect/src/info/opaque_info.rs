@@ -1,6 +1,6 @@
 use crate::{
      Reflect,
-    type_info::{
+    info::{
         Type, TypePath, Generics,
         docs_macro::impl_docs_fn,
         generics::impl_generic_fn,

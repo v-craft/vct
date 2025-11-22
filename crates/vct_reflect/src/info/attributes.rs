@@ -107,12 +107,12 @@ impl Debug for CustomAttributes {
 
 macro_rules! impl_custom_attributes_fn {
     ($field:ident) => {
-        $crate::type_info::attributes::impl_custom_attributes_fn!(self => &self.$field);
+        $crate::info::attributes::impl_custom_attributes_fn!(self => &self.$field);
     };
     ($self:ident => $expr:expr) => {
         /// 根据自身返回属性
         #[inline]
-        pub fn custom_attributes($self: &Self) -> &$crate::type_info::CustomAttributes {
+        pub fn custom_attributes($self: &Self) -> &$crate::info::CustomAttributes {
             $expr
         }
 

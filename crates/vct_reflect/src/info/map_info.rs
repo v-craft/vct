@@ -1,4 +1,4 @@
-use crate::type_info::{
+use crate::info::{
     Generics, MaybeTyped,
     Type, TypePath, TypeInfo,
     docs_macro::impl_docs_fn,

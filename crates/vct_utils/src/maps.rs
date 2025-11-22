@@ -40,6 +40,13 @@ impl<K: Hash + Eq + PartialEq + Clone, V> PreHashMapExt<K, V> for PreHashMap<K, 
 /// 一个将 [`TypeId`] 作为键的 [`HashMap`]
 pub type TypeIdMap<V> = HashMap<TypeId, V, NoOpHash>;
 
+impl<V> TypeIdMap<V> {
+    /// 创建一个空的 [`TypeIdMap`] 。
+    pub const fn new() -> Self {
+        Self::with_hasher(NoOpHash)
+    }
+}
+
 pub trait TypeIdMapExt<V> {
     fn insert_type<T: ?Sized + 'static>(&mut self, v: V) -> Option<V>;
     fn get_type<T: ?Sized + 'static>(&self) -> Option<&V>;
