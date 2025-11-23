@@ -7,7 +7,7 @@ use crate::info::TypeInfo;
 use vct_os::sync::{
     OnceLock, RwLock, PoisonError,
 };
-use vct_utils::TypeIdMap;
+use vct_utils::collections::TypeIdMap;
 
 
 mod sealed {

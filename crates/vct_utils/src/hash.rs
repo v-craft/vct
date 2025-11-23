@@ -17,7 +17,7 @@ pub struct FixedHash;
 impl BuildHasher for FixedHash {
     type Hasher = DefaultHasher<'static>;
 
-    #[inline]
+    #[inline(always)]
     fn build_hasher(&self) -> Self::Hasher {
         FIXED_HASH.build_hasher()
     }

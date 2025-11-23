@@ -1,10 +1,6 @@
-use crate::info::{
-    Generics, MaybeTyped,
-    Type, TypePath, TypeInfo,
-    docs_macro::impl_docs_fn,
-    generics::impl_generic_fn, 
-    type_struct::impl_type_fn,
-};
+use crate::{Reflect, info::{
+    Generics, MaybeTyped, Type, TypeInfo, TypePath, docs_macro::impl_docs_fn, generics::impl_generic_fn, type_struct::impl_type_fn
+}, ops::List};
 
 
 /// 存储编译时列表信息的容器
@@ -26,8 +22,8 @@ impl ListInfo {
     /// 创建新容器
     #[inline]
     pub fn new<
-        TList: TypePath /* + List */,
-        TItem: MaybeTyped + TypePath /* + FromReflect */,
+        TList: TypePath + List,
+        TItem: MaybeTyped + TypePath + Reflect /* + FromReflect */,
     >() -> Self {
         Self {
             ty: Type::of::<TList>(),

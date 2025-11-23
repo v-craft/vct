@@ -17,7 +17,7 @@ pub trait Is {
 }
 
 impl <A: Any> Is for A {
-    #[inline]
+    #[inline(always)]
     fn is<T: Any>() -> bool {
         TypeId::of::<A>() == TypeId::of::<T>()
     }

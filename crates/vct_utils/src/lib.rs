@@ -22,18 +22,18 @@ cfg::parallel! {
     pub use parallel_queue::*;
 }
 
-pub mod cell;
 pub mod collections;
-pub mod debug_info;
+pub mod debug;
 pub mod hash;
+pub mod cell;
 
 mod default;
-mod maps;
 mod on_drop;
+mod is;
 
 pub use default::default;
-pub use maps::*;
 pub use on_drop::OnDrop;
+pub use is::Is;
 
 pub mod prelude {
     pub use alloc::{
@@ -41,7 +41,4 @@ pub mod prelude {
     };
 
     pub use crate::default;
-
-    // pub use disqualified::ShortName;
-    // pub use crate::debug_info::DebugName;
 }

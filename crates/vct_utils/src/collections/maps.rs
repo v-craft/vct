@@ -14,15 +14,21 @@ use crate::hash::{Hashed, NoOpHash};
 /// 使用 [`NoOpHash`] 计算哈希值，即直接读取 [`Hashed`] 中存储的 `u64` 数据
 pub type PreHashMap<K, V> = HashMap<Hashed<K>, V, NoOpHash>;
 
-pub trait PreHashMapExt<K, V> {
-    /// 如果元素存在则获取可变引用，不存在则先插入后获取
-    fn get_or_insert_with<F: FnOnce() -> V>(&mut self, key: &Hashed<K>, func: F) -> &mut V;
+// pub trait PreHashMapExt<K, V> {
+//     /// 如果元素存在则获取可变引用，不存在则先插入后获取
+//     fn get_or_insert_with<F: FnOnce() -> V>(&mut self, key: &Hashed<K>, func: F) -> &mut V;
+// }
+
+impl<K, V> PreHashMap<K, V> {
+    /// 创建一个空的 [`PreHashMap`] 
+    #[inline]
+    pub const fn new() -> Self {
+        Self::with_hasher(NoOpHash)
+    }
 }
 
-impl<K: Hash + Eq + PartialEq + Clone, V> PreHashMapExt<K, V> for PreHashMap<K, V> {
-    // 此代码可能频繁调用，虽然代码量较多，依然建议内联
-    #[inline]
-    fn get_or_insert_with<F: FnOnce() -> V>(&mut self, key: &Hashed<K>, func: F) -> &mut V {
+impl<K: Hash + Eq + PartialEq + Clone, V> PreHashMap<K, V> {
+    pub fn get_or_insert_with<F: FnOnce() -> V>(&mut self, key: &Hashed<K>, func: F) -> &mut V {
         let entry: RawEntryMut<'_, Hashed<K>, V, NoOpHash> = self
             .raw_entry_mut()
             .from_key_hashed_nocheck(key.hash(), key);
@@ -41,43 +47,33 @@ impl<K: Hash + Eq + PartialEq + Clone, V> PreHashMapExt<K, V> for PreHashMap<K, 
 pub type TypeIdMap<V> = HashMap<TypeId, V, NoOpHash>;
 
 impl<V> TypeIdMap<V> {
-    /// 创建一个空的 [`TypeIdMap`] 。
+    /// 创建一个空的 [`TypeIdMap`]
+    #[inline]
     pub const fn new() -> Self {
         Self::with_hasher(NoOpHash)
     }
-}
-
-pub trait TypeIdMapExt<V> {
-    fn insert_type<T: ?Sized + 'static>(&mut self, v: V) -> Option<V>;
-    fn get_type<T: ?Sized + 'static>(&self) -> Option<&V>;
-    fn get_type_mut<T: ?Sized + 'static>(&mut self) -> Option<&mut V>;
-    fn remove_type<T: ?Sized + 'static>(&mut self) -> Option<V>;
-    fn entry_type<T: ?Sized + 'static>(&mut self) -> Entry<'_, TypeId, V, NoOpHash>;
-}
-
-impl<V> TypeIdMapExt<V> for TypeIdMap<V> {
     #[inline]
-    fn insert_type<T: ?Sized + 'static>(&mut self, v: V) -> Option<V> {
+    pub fn insert_type<T: ?Sized + 'static>(&mut self, v: V) -> Option<V> {
         self.insert(TypeId::of::<T>(), v)
     }
 
     #[inline]
-    fn get_type<T: ?Sized + 'static>(&self) -> Option<&V> {
+    pub fn get_type<T: ?Sized + 'static>(&self) -> Option<&V> {
         self.get(&TypeId::of::<T>())
     }
 
     #[inline]
-    fn get_type_mut<T: ?Sized + 'static>(&mut self) -> Option<&mut V> {
+    pub fn get_type_mut<T: ?Sized + 'static>(&mut self) -> Option<&mut V> {
         self.get_mut(&TypeId::of::<T>())
     }
 
     #[inline]
-    fn remove_type<T: ?Sized + 'static>(&mut self) -> Option<V> {
+    pub fn remove_type<T: ?Sized + 'static>(&mut self) -> Option<V> {
         self.remove(&TypeId::of::<T>())
     }
 
     #[inline]
-    fn entry_type<T: ?Sized + 'static>(&mut self) -> Entry<'_, TypeId, V, NoOpHash> {
+    pub fn entry_type<T: ?Sized + 'static>(&mut self) -> Entry<'_, TypeId, V, NoOpHash> {
         self.entry(TypeId::of::<T>())
     }
 }

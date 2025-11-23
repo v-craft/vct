@@ -1,13 +1,8 @@
 use alloc::boxed::Box;
 use crate::{
-    Reflect, 
     info::{
-        Generics, UnnamedField, 
-        Type, TypePath, 
-        docs_macro::impl_docs_fn,
-        generics::impl_generic_fn, 
-        type_struct::impl_type_fn
-    }
+        Generics, Type, TypePath, UnnamedField, docs_macro::impl_docs_fn, generics::impl_generic_fn, type_struct::impl_type_fn
+    }, ops::Tuple
 };
 
 /// 存储编译时元组信息的容器
@@ -29,7 +24,7 @@ impl TupleInfo {
     /// 
     /// - 内部字段顺序是固定的
     #[inline]
-    pub fn new<T: Reflect + TypePath>(fields: &[UnnamedField]) -> Self {
+    pub fn new<T: TypePath + Tuple>(fields: &[UnnamedField]) -> Self {
         Self {
             ty: Type::of::<T>(),
             generics: Generics::new(),

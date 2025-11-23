@@ -37,17 +37,19 @@ pub trait PartialReflect: DynamicTypePath + Send + Sync + 'static {
     /// 数据应用
     fn try_apply(&mut self, value: &dyn PartialReflect) -> Result<(), ApplyError>;
     /// 数据应用
+    #[inline]
     fn apply(&mut self, value: &dyn PartialReflect) {
         PartialReflect::try_apply(self, value).unwrap();
     }
     fn reflect_ref(&self) -> ReflectRef<'_>;
     fn reflect_mut(&mut self) -> ReflectMut<'_>;
     fn reflect_owned(self: Box<Self>) -> ReflectOwned;
-    fn reflect_kind(&self) -> ReflectKind {
-        self.reflect_ref().kind()
-    }
-    
+    fn reflect_kind(&self) -> ReflectKind;
 
+    // fn reflect_kind(&self) -> ReflectKind {
+    //     self.reflect_ref().kind()
+    // }
+    #[inline]
     fn is_dynamic(&self) -> bool {
         false
     }

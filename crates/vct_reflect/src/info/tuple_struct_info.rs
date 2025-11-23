@@ -2,15 +2,9 @@
 use alloc::boxed::Box;
 use vct_os::sync::Arc;
 use crate::{
-    Reflect, 
     info::{
-        Type, Generics, UnnamedField,
-        CustomAttributes, TypePath,
-        docs_macro::impl_docs_fn,
-        attributes::impl_custom_attributes_fn, 
-        generics::impl_generic_fn, 
-        type_struct::impl_type_fn
-    }
+        CustomAttributes, Generics, Type, TypePath, UnnamedField, attributes::impl_custom_attributes_fn, docs_macro::impl_docs_fn, generics::impl_generic_fn, type_struct::impl_type_fn
+    }, ops::TupleStruct
 };
 
 /// 存储编译时元组结构体信息的容器
@@ -30,10 +24,8 @@ impl TupleStructInfo {
     impl_generic_fn!(generics);
     impl_custom_attributes_fn!(custom_attributes);
 
-    /// 创建新容器
-    /// 
-    /// - 内部字段的顺序是确定的
-    pub fn new<T: Reflect + TypePath>(fields: &[UnnamedField]) -> Self {
+    #[inline]
+    pub fn new<T: TypePath + TupleStruct>(fields: &[UnnamedField]) -> Self {
         Self {
             ty: Type::of::<T>(),
             generics: Generics::new(),

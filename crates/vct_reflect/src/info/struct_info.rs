@@ -2,7 +2,7 @@ use alloc::boxed::Box;
 use vct_utils::collections::HashMap;
 use vct_os::sync::Arc;
 use crate::{
-    Reflect,
+    ops::Struct,
     info::{
         CustomAttributes, Generics, NamedField, 
         Type, TypePath, 
@@ -35,7 +35,7 @@ impl StructInfo {
     /// 创建新容器
     /// 
     /// - fields 在容器内部的顺序是固定的
-    pub fn new<T: Reflect + TypePath>(fields: &[NamedField]) -> Self {
+    pub fn new<T: TypePath + Struct>(fields: &[NamedField]) -> Self {
         let field_indices = fields
             .iter()
             .enumerate()

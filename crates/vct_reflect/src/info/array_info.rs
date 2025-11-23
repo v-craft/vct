@@ -1,9 +1,10 @@
-use crate::info::{
-    Generics, MaybeTyped,
-    Type, TypePath, TypeInfo,
-    docs_macro::impl_docs_fn,
-    generics::impl_generic_fn, 
-    type_struct::impl_type_fn,
+use crate::{
+    Reflect, 
+    info::{
+        Generics, MaybeTyped, Type, TypeInfo, TypePath, 
+        docs_macro::impl_docs_fn, generics::impl_generic_fn, type_struct::impl_type_fn
+    }, 
+    ops::Array
 };
 
 /// 存储编译时数组信息的容器
@@ -26,8 +27,8 @@ impl ArrayInfo {
     /// 创建新容器
     #[inline]
     pub fn new<
-        TArray: TypePath /*+ Array*/,
-        TItem: MaybeTyped + TypePath /*+ Reflect*/,
+        TArray: TypePath + Array,
+        TItem: MaybeTyped + TypePath + Reflect,
     >(capacity: usize) -> Self {
         Self {
             ty: Type::of::<TArray>(),

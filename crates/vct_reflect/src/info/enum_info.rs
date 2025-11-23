@@ -3,14 +3,9 @@ use alloc::{
 };
 use vct_os::sync::Arc;
 use vct_utils::collections::HashMap;
-use crate::info::{
-    CustomAttributes, Generics, Type,
-    VariantInfo, TypePath,
-    attributes::impl_custom_attributes_fn, 
-    docs_macro::impl_docs_fn, 
-    generics::impl_generic_fn, 
-    type_struct::impl_type_fn,
-};
+use crate::{info::{
+    CustomAttributes, Generics, Type, TypePath, VariantInfo, attributes::impl_custom_attributes_fn, docs_macro::impl_docs_fn, generics::impl_generic_fn, type_struct::impl_type_fn
+}, ops::Enum};
 
 
 #[derive(Clone, Debug)]
@@ -32,7 +27,7 @@ impl EnumInfo {
     impl_custom_attributes_fn!(custom_attributes);
 
     /// 创建新容器
-    pub fn new<TEnum: TypePath /*+Enum*/>(variants: &[VariantInfo]) -> Self {
+    pub fn new<TEnum: TypePath + Enum>(variants: &[VariantInfo]) -> Self {
         let variant_indices = variants
             .iter()
             .enumerate()

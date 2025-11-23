@@ -1,9 +1,6 @@
-use crate::info::{
-    Type, Generics, TypePath,
-    docs_macro::impl_docs_fn,
-    generics::impl_generic_fn, 
-    type_struct::impl_type_fn,
-};
+use crate::{Reflect, info::{
+    Generics, Type, TypePath, docs_macro::impl_docs_fn, generics::impl_generic_fn, type_struct::impl_type_fn
+}, ops::Set};
 
 
 #[derive(Clone, Debug)]
@@ -23,8 +20,8 @@ impl SetInfo {
     /// 创建新容器
     #[inline]
     pub fn new<
-        TSet: TypePath /*+ Set*/, 
-        TValue: TypePath /*+Reflect*/,
+        TSet: TypePath + Set, 
+        TValue: TypePath + Reflect,
     >() -> Self {
         Self {
             ty: Type::of::<TSet>(),

@@ -17,11 +17,13 @@
 pub mod hash_map;
 pub mod hash_set;
 pub mod hash_table;
+mod maps;
 
+pub use hashbrown::Equivalent;
 pub use hash_map::HashMap;
 pub use hash_set::HashSet;
 pub use hash_table::HashTable;
-pub use hashbrown::Equivalent;
+pub use maps::{PreHashMap, TypeIdMap};
 
 pub use alloc::collections::*;
 

@@ -1,10 +1,6 @@
-use crate::info::{
-    Generics, MaybeTyped,
-    Type, TypePath, TypeInfo,
-    docs_macro::impl_docs_fn,
-    generics::impl_generic_fn, 
-    type_struct::impl_type_fn,
-};
+use crate::{Reflect, info::{
+    Generics, MaybeTyped, Type, TypeInfo, TypePath, docs_macro::impl_docs_fn, generics::impl_generic_fn, type_struct::impl_type_fn
+}, ops::Map};
 
 #[derive(Clone, Debug)]
 pub struct MapInfo {
@@ -26,9 +22,9 @@ impl MapInfo {
     /// 创建新容器
     #[inline]
     pub fn new<
-        TMap: TypePath /*+ Map*/,
-        TKey: MaybeTyped + TypePath /*+ Reflect*/,
-        TValue: MaybeTyped + TypePath /*+ Reflect*/,
+        TMap: TypePath + Map,
+        TKey: MaybeTyped + TypePath + Reflect,
+        TValue: MaybeTyped + TypePath + Reflect,
     >() -> Self {
         Self {
             ty: Type::of::<TMap>(),

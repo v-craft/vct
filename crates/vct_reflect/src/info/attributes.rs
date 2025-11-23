@@ -3,7 +3,7 @@ use core::{
     fmt::{Debug, Formatter},
 };
 use alloc::boxed::Box;
-use vct_utils::TypeIdMap;
+use vct_utils::collections::TypeIdMap;
 
 use crate::Reflect;
 
