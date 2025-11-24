@@ -4,7 +4,7 @@ use alloc::{
     vec::Vec,
     boxed::Box,
 };
-use vct_utils::collections::HashTable;
+use vct_utils::collections::{hash_table, HashTable};
 use crate::{
     PartialReflect, Reflect,
     ops::{
@@ -41,7 +41,7 @@ impl TypePath for DynamicMap {
 }
 
 impl DynamicMap {
-    pub fn set_target_type(&mut self, target_type: Option<&'static TypeInfo>) {
+    pub fn set_target_type_info(&mut self, target_type: Option<&'static TypeInfo>) {
         if let Some(target_type) = target_type {
             assert!(
                 matches!(target_type, TypeInfo::Map(_)),
@@ -204,28 +204,39 @@ impl FromIterator<(Box<dyn PartialReflect>, Box<dyn PartialReflect>)> for Dynami
     fn from_iter<I: IntoIterator<Item = (Box<dyn PartialReflect>, Box<dyn PartialReflect>)>>(
         items: I,
     ) -> Self {
-        let mut map = Self::default();
+        // inline for compile-time runing
+        let mut this = Self { 
+            target_type: None,
+            hash_table: HashTable::new() 
+        };
+
         for (key, value) in items.into_iter() {
-            map.insert_boxed(key, value);
+            this.insert_boxed(key, value);
         }
-        map
+        this
     }
 }
 
 impl<K: Reflect, V: Reflect> FromIterator<(K, V)> for DynamicMap {
     fn from_iter<I: IntoIterator<Item = (K, V)>>(items: I) -> Self {
-        let mut map = Self::default();
+        // inline for compile-time runing
+        let mut this = Self { 
+            target_type: None,
+            hash_table: HashTable::new() 
+        };
+
         for (key, value) in items.into_iter() {
-            map.insert(key, value);
+            this.insert(key, value);
         }
-        map
+        this
     }
 }
 
 impl IntoIterator for DynamicMap {
     type Item = (Box<dyn PartialReflect>, Box<dyn PartialReflect>);
-    type IntoIter = vct_utils::collections::hash_table::IntoIter<Self::Item>;
+    type IntoIter = hash_table::IntoIter<Self::Item>;
 
+    #[inline]
     fn into_iter(self) -> Self::IntoIter {
         self.hash_table.into_iter()
     }
@@ -234,13 +245,11 @@ impl IntoIterator for DynamicMap {
 impl<'a> IntoIterator for &'a DynamicMap {
     type Item = (&'a dyn PartialReflect, &'a dyn PartialReflect);
     type IntoIter = core::iter::Map<
-        vct_utils::collections::hash_table::Iter<
-            'a,
-            (Box<dyn PartialReflect>, Box<dyn PartialReflect>),
-        >,
+        hash_table::Iter<'a, (Box<dyn PartialReflect>, Box<dyn PartialReflect>)>,
         fn(&'a (Box<dyn PartialReflect>, Box<dyn PartialReflect>)) -> Self::Item,
     >;
 
+    #[inline]
     fn into_iter(self) -> Self::IntoIter {
         self.hash_table
             .iter()
@@ -267,7 +276,7 @@ pub trait Map: PartialReflect {
 
     fn to_dynamic_map(&self) -> DynamicMap {
         let mut map = DynamicMap::default();
-        map.set_target_type(self.get_target_type_info());
+        map.set_target_type_info(self.get_target_type_info());
         for (key, value) in self.iter() {
             map.insert_boxed(key.to_dynamic(), value.to_dynamic());
         }

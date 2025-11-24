@@ -151,3 +151,17 @@ impl fmt::Debug for TypePathTable {
             .finish()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use core::mem::size_of;
+
+    #[test]
+    fn size_of_type_path_table() {
+        let size = size_of::<TypePathTable>();
+        // 16 byte alignment
+        assert_eq!(size, 48usize, "Expected size_of::<TypePathTable>() is 48, instead of {size}.");
+    }
+
+}

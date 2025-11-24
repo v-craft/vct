@@ -20,15 +20,15 @@ pub enum ReflectKind {
 impl fmt::Display for ReflectKind {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            ReflectKind::Struct => f.pad("struct"),
-            ReflectKind::TupleStruct => f.pad("tuple struct"),
-            ReflectKind::Tuple => f.pad("tuple"),
-            ReflectKind::List => f.pad("list"),
-            ReflectKind::Array => f.pad("array"),
-            ReflectKind::Map => f.pad("map"),
-            ReflectKind::Set => f.pad("set"),
-            ReflectKind::Enum => f.pad("enum"),
-            ReflectKind::Opaque => f.pad("opaque"),
+            ReflectKind::Struct => f.pad("Struct"),
+            ReflectKind::TupleStruct => f.pad("TupleStruct"),
+            ReflectKind::Tuple => f.pad("Tuple"),
+            ReflectKind::List => f.pad("List"),
+            ReflectKind::Array => f.pad("Array"),
+            ReflectKind::Map => f.pad("Map"),
+            ReflectKind::Set => f.pad("Set"),
+            ReflectKind::Enum => f.pad("Enum"),
+            ReflectKind::Opaque => f.pad("Opaque"),
         }
     }
 }
@@ -92,6 +92,7 @@ impl TypeInfo {
     impl_cast_method!(as_list: List => ListInfo);
     impl_cast_method!(as_array: Array => ArrayInfo);
     impl_cast_method!(as_map: Map => MapInfo);
+    impl_cast_method!(as_set: Set => SetInfo);
     impl_cast_method!(as_enum: Enum => EnumInfo);
     impl_cast_method!(as_opaque: Opaque => OpaqueInfo);
 
@@ -108,8 +109,8 @@ impl TypeInfo {
     });
     
     /// 获取底层类型
-    #[inline]
     pub fn ty(&self) -> &Type {
+        // Not inline: Avoid recursive inline
         match self {
             Self::Struct(info) => info.ty(),
             Self::TupleStruct(info) => info.ty(),
@@ -163,8 +164,8 @@ impl TypeInfo {
     }
 
     #[cfg(feature = "reflect_docs")]
-    #[inline]
     pub fn docs(&self) -> Option<&str> {
+        // Not inline: Avoid recursive inline
         match self {
             Self::Struct(info) => info.docs(),
             Self::TupleStruct(info) => info.docs(),

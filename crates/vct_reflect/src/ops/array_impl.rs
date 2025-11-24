@@ -17,7 +17,7 @@ use crate::{
     },
 };
 
-
+// Not impl Default: The length of Array needs to be determined.
 pub struct DynamicArray {
     target_type: Option<&'static TypeInfo>,
     values: Box<[Box<dyn PartialReflect>]>,
@@ -51,7 +51,7 @@ impl DynamicArray {
         }
     }
 
-    pub fn set_target_type(&mut self, target_type: Option<&'static TypeInfo>) {
+    pub fn set_target_type_info(&mut self, target_type: Option<&'static TypeInfo>) {
         if let Some(target_type) = target_type {
             assert!(
                 matches!(target_type, TypeInfo::Array(_)),

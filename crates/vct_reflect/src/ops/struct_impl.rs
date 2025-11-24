@@ -1,5 +1,6 @@
 use core::fmt;
 use alloc::{
+    string::ToString,
     vec::Vec,
     boxed::Box,
     borrow::Cow,
@@ -43,7 +44,7 @@ impl TypePath for DynamicStruct {
 
 impl DynamicStruct {
     /// 修改代表的底层类型
-    pub fn set_target_type(&mut self, target_type: Option<&'static TypeInfo>) {
+    pub fn set_target_type_info(&mut self, target_type: Option<&'static TypeInfo>) {
         if let Some(target_type) = target_type {
             assert!(
                 matches!(target_type, TypeInfo::Struct(_)),
@@ -54,24 +55,24 @@ impl DynamicStruct {
     }
 
     /// 插入字段
-    pub fn insert_boxed<'a>(
+    pub fn insert_boxed(
         &mut self,
-        name: impl Into<Cow<'a, str>>,
+        name: impl Into<Cow<'static, str>>,
         value: Box<dyn PartialReflect>,
     ) {
-        let name: Cow<str> = name.into();
+        let name: Cow<'static, str> = name.into();
         if let Some(index) = self.field_indices.get(&name) {
             self.fields[*index] = value;
         } else {
             self.fields.push(value);
-            self.field_indices.insert(Cow::Owned(name.clone().into_owned()), self.fields.len() - 1);
-            self.field_names.push(Cow::Owned(name.into_owned()));
+            self.field_indices.insert(name.clone(), self.fields.len() - 1);
+            self.field_names.push(name);
         }
     }
 
     /// 插入字段
     #[inline]
-    pub fn insert<'a, T: PartialReflect>(&mut self, name: impl Into<Cow<'a, str>>, value: T) {
+    pub fn insert<'a, T: PartialReflect>(&mut self, name: impl Into<Cow<'static, str>>, value: T) {
         self.insert_boxed(name, Box::new(value));
     }
 
@@ -195,7 +196,7 @@ impl fmt::Debug for DynamicStruct {
     }
 }
 
-impl<'a, N: Into<Cow<'a, str>>> FromIterator<(N, Box<dyn PartialReflect>)> for DynamicStruct {
+impl<'a, N: Into<Cow<'static, str>>> FromIterator<(N, Box<dyn PartialReflect>)> for DynamicStruct {
     fn from_iter<T: IntoIterator<Item = (N, Box<dyn PartialReflect>)>>(fields: T) -> Self {
         let mut dynamic_struct = Self::default();
         for (name, value) in fields.into_iter() {
@@ -250,9 +251,9 @@ pub trait Struct: PartialReflect {
     /// 获取动态结构体
     fn to_dynamic_struct(&self) -> DynamicStruct {
         let mut dynamic_struct = DynamicStruct::default();
-        dynamic_struct.set_target_type(self.get_target_type_info());
+        dynamic_struct.set_target_type_info(self.get_target_type_info());
         for (i, val) in self.iter_fields().enumerate() {
-            dynamic_struct.insert_boxed(self.name_at(i).unwrap(), val.to_dynamic());
+            dynamic_struct.insert_boxed(self.name_at(i).unwrap().to_string(), val.to_dynamic());
         }
         dynamic_struct
     }
@@ -331,6 +332,15 @@ impl Struct for DynamicStruct {
     #[inline]
     fn iter_fields(&self) -> StructFieldIter<'_> {
         StructFieldIter::new(self)
+    }
+
+    fn to_dynamic_struct(&self) -> DynamicStruct {
+        DynamicStruct {
+            target_type: self.get_target_type_info(),
+            fields: self.fields.iter().map(|val| val.to_dynamic()).collect(),
+            field_names: self.field_names.clone(),
+            field_indices: self.field_indices.clone(),
+        }
     }
 }
 

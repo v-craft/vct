@@ -11,13 +11,11 @@ use alloc::{
     string::ToString,
 };
 use crate:: {
-    Reflect,
-    ops::{
-        ApplyError, ReflectCloneError, ReflectMut, ReflectOwned, ReflectRef
-    },
-    info::{
+    Reflect, info::{
         DynamicTypePath, ReflectKind, TypeInfo, TypePath
-    },
+    }, ops::{
+        ApplyError, ReflectCloneError, ReflectMut, ReflectOwned, ReflectRef, array_debug, enum_debug, list_debug, map_debug, set_debug, struct_debug, tuple_debug, tuple_struct_debug
+    }
 };
 pub trait PartialReflect: DynamicTypePath + Send + Sync + 'static {
     /// 获取目标类型
@@ -55,7 +53,19 @@ pub trait PartialReflect: DynamicTypePath + Send + Sync + 'static {
     }
     
     fn to_dynamic(&self) -> Box<dyn PartialReflect> {
-        todo!()
+        match self.reflect_ref() {
+            ReflectRef::Struct(dyn_struct) => Box::new(dyn_struct.to_dynamic_struct()),
+            ReflectRef::TupleStruct(dyn_tuple_struct) => {
+                Box::new(dyn_tuple_struct.to_dynamic_tuple_struct())
+            }
+            ReflectRef::Tuple(dyn_tuple) => Box::new(dyn_tuple.to_dynamic_tuple()),
+            ReflectRef::List(dyn_list) => Box::new(dyn_list.to_dynamic_list()),
+            ReflectRef::Array(dyn_array) => Box::new(dyn_array.to_dynamic_array()),
+            ReflectRef::Map(dyn_map) => Box::new(dyn_map.to_dynamic_map()),
+            ReflectRef::Set(dyn_set) => Box::new(dyn_set.to_dynamic_set()),
+            ReflectRef::Enum(dyn_enum) => Box::new(dyn_enum.to_dynamic_enum()),
+            ReflectRef::Opaque(value) => value.reflect_clone().unwrap().into_partial_reflect(),
+        }
     }
 
     fn reflect_clone(&self) -> Result<Box<dyn Reflect>, ReflectCloneError> {
@@ -91,8 +101,18 @@ pub trait PartialReflect: DynamicTypePath + Send + Sync + 'static {
         None
     }
 
-    fn debug(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        todo!()
+    fn debug(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self.reflect_ref() {
+            ReflectRef::Struct(dyn_struct) => struct_debug(dyn_struct, f),
+            ReflectRef::TupleStruct(dyn_tuple_struct) => tuple_struct_debug(dyn_tuple_struct, f),
+            ReflectRef::Tuple(dyn_tuple) => tuple_debug(dyn_tuple, f),
+            ReflectRef::List(dyn_list) => list_debug(dyn_list, f),
+            ReflectRef::Array(dyn_array) => array_debug(dyn_array, f),
+            ReflectRef::Map(dyn_map) => map_debug(dyn_map, f),
+            ReflectRef::Set(dyn_set) => set_debug(dyn_set, f),
+            ReflectRef::Enum(dyn_enum) => enum_debug(dyn_enum, f),
+            ReflectRef::Opaque(_) => write!(f, "Reflect({})", self.reflect_type_path()),
+        }
     }
 
 }
@@ -127,6 +147,7 @@ impl dyn PartialReflect {
 }
 
 impl fmt::Debug for dyn PartialReflect {
+    #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.debug(f)
     }

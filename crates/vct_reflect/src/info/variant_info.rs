@@ -4,7 +4,7 @@ use vct_os::sync::Arc;
 use vct_utils::collections::HashMap;
 use crate::info::{
     CustomAttributes, NamedField, UnnamedField, 
-    attributes::impl_custom_attributes_fn,
+    attributes::{impl_custom_attributes_fn, impl_with_custom_attributes},
     docs_macro::impl_docs_fn,
 };
 
@@ -50,10 +50,10 @@ pub enum VariantType {
 /// ```
 #[derive(Clone, Debug)]
 pub struct StructVariantInfo {
-    name: &'static str,
     fields: Box<[NamedField]>,
     field_names: Box<[&'static str]>,
     field_indices: HashMap<&'static str, usize>,
+    name: &'static str,
     custom_attributes: Arc<CustomAttributes>,
     #[cfg(feature = "reflect_docs")]
     docs: Option<&'static str>,
@@ -62,6 +62,7 @@ pub struct StructVariantInfo {
 impl StructVariantInfo {
     impl_docs_fn!(docs);
     impl_custom_attributes_fn!(custom_attributes);
+    impl_with_custom_attributes!(custom_attributes);
 
     /// 创建新容器
     pub fn new(name: &'static str, fields: &[NamedField]) -> Self {
@@ -127,15 +128,6 @@ impl StructVariantInfo {
     pub fn field_len(&self) -> usize {
         self.fields.len()
     }
-
-    /// 修改自定义属性
-    #[inline]
-    pub fn with_custom_attributes(self, custom_attributes: CustomAttributes) -> Self {
-        Self {
-            custom_attributes: Arc::new(custom_attributes),
-            ..self
-        }
-    }
 }
 
 
@@ -148,8 +140,8 @@ impl StructVariantInfo {
 /// ```
 #[derive(Clone, Debug)]
 pub struct TupleVariantInfo {
-    name: &'static str,
     fields: Box<[UnnamedField]>,
+    name: &'static str,
     custom_attributes: Arc<CustomAttributes>,
     #[cfg(feature = "reflect_docs")]
     docs: Option<&'static str>,
@@ -158,6 +150,7 @@ pub struct TupleVariantInfo {
 impl TupleVariantInfo {
     impl_docs_fn!(docs);
     impl_custom_attributes_fn!(custom_attributes);
+    impl_with_custom_attributes!(custom_attributes);
 
     /// 创建新对象
     #[inline]
@@ -194,15 +187,6 @@ impl TupleVariantInfo {
     pub fn field_len(&self) -> usize {
         self.fields.len()
     }
-
-    /// 修改属性（覆盖，而非添加）
-    #[inline]
-    pub fn with_custom_attributes(self, custom_attributes: CustomAttributes) -> Self {
-        Self {
-            custom_attributes: Arc::new(custom_attributes),
-            ..self
-        }
-    }
 }
 
 /// 存储枚举中单元项信息的容器
@@ -223,6 +207,7 @@ pub struct UnitVariantInfo {
 impl UnitVariantInfo {
     impl_docs_fn!(docs);
     impl_custom_attributes_fn!(custom_attributes);
+    impl_with_custom_attributes!(custom_attributes);
 
     /// 创建新容器
     #[inline]
@@ -239,15 +224,6 @@ impl UnitVariantInfo {
     #[inline]
     pub fn name(&self) -> &'static str {
         self.name
-    }
-
-    /// 修改属性（覆盖，而非添加）
-    #[inline]
-    pub fn with_custom_attributes(self, custom_attributes: CustomAttributes) -> Self {
-        Self {
-            custom_attributes: Arc::new(custom_attributes),
-            ..self
-        }
     }
 }
 

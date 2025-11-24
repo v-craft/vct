@@ -6,10 +6,10 @@ use crate::{Reflect, info::{
 pub struct MapInfo {
     ty: Type,
     generics: Generics,
-    key_info: fn() -> Option<&'static TypeInfo>,
     key_ty: Type,
-    value_info: fn() -> Option<&'static TypeInfo>,
     value_ty: Type,
+    key_info: fn() -> Option<&'static TypeInfo>,
+    value_info: fn() -> Option<&'static TypeInfo>,
     #[cfg(feature = "reflect_docs")]
     docs: Option<&'static str>,
 }
@@ -29,10 +29,10 @@ impl MapInfo {
         Self {
             ty: Type::of::<TMap>(),
             generics: Generics::new(),
-            key_info: TKey::maybe_type_info,
             key_ty: Type::of::<TKey>(),
-            value_info: TValue::maybe_type_info,
             value_ty: Type::of::<TValue>(),
+            key_info: TKey::maybe_type_info,
+            value_info: TValue::maybe_type_info,
             #[cfg(feature = "reflect_docs")]
             docs: None,
         }

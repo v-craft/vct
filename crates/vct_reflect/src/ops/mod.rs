@@ -46,10 +46,23 @@ pub use array_impl::{
 };
 
 mod map_impl;
-pub use map_impl::*;
+pub use map_impl::{
+    DynamicMap, Map,
+    map_partial_eq, map_debug,
+};
 
 mod set_impl;
-pub use set_impl::*;
+pub use set_impl::{
+    DynamicSet, Set,
+    set_partial_eq, set_debug,
+};
+
+mod variant_impl;
+pub use variant_impl::{
+    DynamicVariant, VariantField, VariantFieldIter,
+};
 
 mod enum_impl;
 pub use enum_impl::*;
+
+

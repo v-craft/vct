@@ -13,8 +13,8 @@ use crate::{
 /// 存储泛型类型参数信息的结构体
 #[derive(Clone, Debug)]
 pub struct TypeParamInfo {
-    name: Cow<'static, str>,
     ty: Type,
+    name: Cow<'static, str>,
     default: Option<Type>,
 }
 
@@ -26,8 +26,8 @@ impl TypeParamInfo {
     #[inline]
     pub fn new<T: TypePath + ?Sized>(name: impl Into<Cow<'static, str>>) -> Self {
         Self {
-            name: name.into(),
             ty: Type::of::<T>(),
+            name: name.into(),
             default: None,
         }
     }
@@ -45,6 +45,7 @@ impl TypeParamInfo {
     }
 
     /// 修改默认类型
+    #[inline]
     pub fn with_default<T: TypePath + ?Sized>(mut self) -> Self {
         self.default = Some(Type::of::<T>());
         self
@@ -54,8 +55,8 @@ impl TypeParamInfo {
 /// 存储泛型常量参数信息的结构体
 #[derive(Clone, Debug)]
 pub struct ConstParamInfo {
-    name: Cow<'static, str>,
     ty: Type,
+    name: Cow<'static, str>,
     // 常量参数是值且类型确定，因此使用 Arc<dyn Reflect> 存储
     default: Option<Arc<dyn Reflect>>,
 }
@@ -68,8 +69,8 @@ impl ConstParamInfo {
     #[inline]
     pub fn new<T: TypePath + ?Sized>(name: impl Into<Cow<'static, str>>) -> Self {
         Self {
-            name: name.into(),
             ty: Type::of::<T>(),
+            name: name.into(),
             default: None,
         }
     }
@@ -125,7 +126,6 @@ impl From<ConstParamInfo> for GenericInfo {
 }
 
 impl GenericInfo {
-    // `is` `ty` `type_id` `type_path` `type_path_table`
     impl_type_fn!(self => match self {
         Self::Type(info) => info.ty(),
         Self::Const(info) => info.ty(),
@@ -164,6 +164,7 @@ impl Generics {
     /// 根据参数名查询泛型参数
     /// 
     /// 线性时间复杂度
+    #[inline]
     pub fn get(&self, name: &str) -> Option<&GenericInfo> {
         self.0.iter().find(|info| info.name() == name)
     }
@@ -199,6 +200,7 @@ macro_rules! impl_generic_fn {
         $crate::info::generics::impl_generic_fn!(self => &self.$field);
 
         /// 替换自身的泛型信息结构体
+        #[inline]
         pub fn with_generics(
             mut self, 
             generics: $crate::info::Generics
@@ -209,6 +211,7 @@ macro_rules! impl_generic_fn {
     };
     ($self:ident => $expr:expr) => {
         /// 根据表达式获取 self 中的泛型信息结构体
+        #[inline]
         pub fn generics($self: &Self) -> &$crate::info::Generics {
             $expr
         }
@@ -216,3 +219,17 @@ macro_rules! impl_generic_fn {
 }
 
 pub(crate) use impl_generic_fn;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use core::mem::size_of;
+
+    #[test]
+    fn size_of_generics() {
+        let box_size = size_of::<Box<[GenericInfo]>>();
+        let size = size_of::<Generics>();
+        assert_eq!(box_size, size);
+        assert_eq!(size, 16usize, "Expected size_of::<Generics>() is 16, instead of {size}.");
+    }
+}

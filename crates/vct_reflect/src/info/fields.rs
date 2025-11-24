@@ -1,13 +1,10 @@
-
 use core::fmt::Display;
 use alloc::borrow::Cow;
-
 use vct_os::sync::Arc;
-
 use crate::info::{
     CustomAttributes, MaybeTyped,
     Type, TypeInfo, TypePath, 
-    attributes::impl_custom_attributes_fn,
+    attributes::{impl_custom_attributes_fn, impl_with_custom_attributes},
     docs_macro::impl_docs_fn,
     type_struct::impl_type_fn,
 };
@@ -15,9 +12,9 @@ use crate::info::{
 /// 命名字段，如结构体的字段
 #[derive(Clone, Debug)]
 pub struct NamedField {
+    ty: Type,
     name: &'static str,
     type_info: fn() -> Option<&'static TypeInfo>,
-    ty: Type,
     custom_attributes: Arc<CustomAttributes>,
     #[cfg(feature = "reflect_docs")]
     docs: Option<&'static str>,
@@ -27,6 +24,7 @@ impl NamedField {
     impl_docs_fn!(docs);
     impl_type_fn!(ty);
     impl_custom_attributes_fn!(custom_attributes);
+    impl_with_custom_attributes!(custom_attributes);
 
     /// 创建新对象
     #[inline]
@@ -52,23 +50,14 @@ impl NamedField {
     pub fn type_info(&self) -> Option<&'static TypeInfo> {
         (self.type_info)()
     }
-
-    /// 修改属性（覆盖，而非添加）
-    #[inline]
-    pub fn with_custom_attributes(self, custom_attributes: CustomAttributes) -> Self {
-        Self {
-            custom_attributes: Arc::new(custom_attributes),
-            ..self
-        }
-    }
 }
 
 /// 无名字段，如元组结构体
 #[derive(Clone, Debug)]
 pub struct UnnamedField {
+    ty: Type,
     index: usize,
     type_info: fn() -> Option<&'static TypeInfo>,
-    ty: Type,
     custom_attributes: Arc<CustomAttributes>,
     #[cfg(feature = "reflect_docs")]
     docs: Option<&'static str>,
@@ -78,6 +67,7 @@ impl UnnamedField {
     impl_docs_fn!(docs);
     impl_type_fn!(ty);
     impl_custom_attributes_fn!(custom_attributes);
+    impl_with_custom_attributes!(custom_attributes);
 
     /// 创建新对象
     #[inline]
@@ -102,15 +92,6 @@ impl UnnamedField {
     #[inline]
     pub fn type_info(&self) -> Option<&'static TypeInfo> {
         (self.type_info)()
-    }
-
-    /// 修改属性（覆盖，而非添加）
-    #[inline]
-    pub fn with_custom_attributes(self, custom_attributes: CustomAttributes) -> Self {
-        Self {
-            custom_attributes: Arc::new(custom_attributes),
-            ..self
-        }
     }
 }
 

@@ -3,7 +3,7 @@ use alloc::boxed::Box;
 use vct_os::sync::Arc;
 use crate::{
     info::{
-        CustomAttributes, Generics, Type, TypePath, UnnamedField, attributes::impl_custom_attributes_fn, docs_macro::impl_docs_fn, generics::impl_generic_fn, type_struct::impl_type_fn
+        CustomAttributes, Generics, Type, TypePath, UnnamedField, attributes::{impl_custom_attributes_fn, impl_with_custom_attributes}, docs_macro::impl_docs_fn, generics::impl_generic_fn, type_struct::impl_type_fn
     }, ops::TupleStruct
 };
 
@@ -23,6 +23,7 @@ impl TupleStructInfo {
     impl_type_fn!(ty);
     impl_generic_fn!(generics);
     impl_custom_attributes_fn!(custom_attributes);
+    impl_with_custom_attributes!(custom_attributes);
 
     #[inline]
     pub fn new<T: TypePath + TupleStruct>(fields: &[UnnamedField]) -> Self {
@@ -52,15 +53,6 @@ impl TupleStructInfo {
     #[inline]
     pub fn field_len(&self) -> usize {
         self.fields.len()
-    }
-
-    /// 修改属性（覆盖，而非添加）
-    #[inline]
-    pub fn with_custom_attributes(self, custom_attributes: CustomAttributes) -> Self {
-        Self {
-            custom_attributes: Arc::new(custom_attributes),
-            ..self
-        }
     }
 }
 

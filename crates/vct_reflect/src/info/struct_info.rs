@@ -2,15 +2,9 @@ use alloc::boxed::Box;
 use vct_utils::collections::HashMap;
 use vct_os::sync::Arc;
 use crate::{
-    ops::Struct,
     info::{
-        CustomAttributes, Generics, NamedField, 
-        Type, TypePath, 
-        docs_macro::impl_docs_fn,
-        attributes::impl_custom_attributes_fn, 
-        generics::impl_generic_fn, 
-        type_struct::impl_type_fn
-    }
+        CustomAttributes, Generics, NamedField, Type, TypePath, attributes::{impl_custom_attributes_fn, impl_with_custom_attributes}, docs_macro::impl_docs_fn, generics::impl_generic_fn, type_struct::impl_type_fn
+    }, ops::Struct
 };
 
 /// 存储编译时结构体信息的容器
@@ -31,6 +25,7 @@ impl StructInfo {
     impl_type_fn!(ty);
     impl_generic_fn!(generics);
     impl_custom_attributes_fn!(custom_attributes);
+    impl_with_custom_attributes!(custom_attributes);
 
     /// 创建新容器
     /// 
@@ -92,14 +87,5 @@ impl StructInfo {
     #[inline]
     pub fn field_len(&self) -> usize {
         self.fields.len()
-    }
-
-    /// 修改属性（覆盖，而非添加）
-    #[inline]
-    pub fn with_custom_attributes(self, custom_attributes: CustomAttributes) -> Self {
-        Self {
-            custom_attributes: Arc::new(custom_attributes),
-            ..self
-        }
     }
 }

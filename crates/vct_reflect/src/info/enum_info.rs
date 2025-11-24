@@ -3,9 +3,20 @@ use alloc::{
 };
 use vct_os::sync::Arc;
 use vct_utils::collections::HashMap;
-use crate::{info::{
-    CustomAttributes, Generics, Type, TypePath, VariantInfo, attributes::impl_custom_attributes_fn, docs_macro::impl_docs_fn, generics::impl_generic_fn, type_struct::impl_type_fn
-}, ops::Enum};
+use crate::{
+    ops::Enum,
+    info::{
+        CustomAttributes, Generics,
+        Type, TypePath, VariantInfo, 
+        attributes::{
+            impl_custom_attributes_fn,
+            impl_with_custom_attributes,
+        },
+        docs_macro::impl_docs_fn,
+        generics::impl_generic_fn,
+        type_struct::impl_type_fn,
+    }, 
+};
 
 
 #[derive(Clone, Debug)]
@@ -25,6 +36,7 @@ impl EnumInfo {
     impl_type_fn!(ty);
     impl_generic_fn!(generics);
     impl_custom_attributes_fn!(custom_attributes);
+    impl_with_custom_attributes!(custom_attributes);
 
     /// 创建新容器
     pub fn new<TEnum: TypePath + Enum>(variants: &[VariantInfo]) -> Self {
@@ -45,15 +57,6 @@ impl EnumInfo {
             custom_attributes: Arc::new(CustomAttributes::default()),
             #[cfg(feature = "reflect_docs")]
             docs: None,
-        }
-    }
-
-    /// 修改属性（覆盖，而非添加）
-    #[inline]
-    pub fn with_custom_attributes(self, custom_attributes: CustomAttributes) -> Self {
-        Self {
-            custom_attributes: Arc::new(custom_attributes),
-            ..self
         }
     }
 

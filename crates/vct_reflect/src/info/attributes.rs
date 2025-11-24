@@ -1,6 +1,6 @@
 use core::{
     any::TypeId,
-    fmt::{Debug, Formatter},
+    fmt,
 };
 use alloc::boxed::Box;
 use vct_utils::collections::TypeIdMap;
@@ -34,8 +34,9 @@ impl CustomAttribute {
     }
 }
 
-impl Debug for CustomAttribute {
-    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+impl fmt::Debug for CustomAttribute {
+    #[inline]
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.value.debug(f)
     }
 }
@@ -99,8 +100,8 @@ impl CustomAttributes {
     }
 }
 
-impl Debug for CustomAttributes {
-    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+impl fmt::Debug for CustomAttributes {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_set().entries(self.attributes.values()).finish()
     }
 }
@@ -117,30 +118,54 @@ macro_rules! impl_custom_attributes_fn {
         }
 
         /// 获取属性
-        #[inline]
         pub fn get_attribute<T: $crate::Reflect>($self: &Self) -> Option<&T> {
             $self.custom_attributes().get::<T>()
         }
 
         /// 获取属性
-        #[inline]
         pub fn get_attribute_by_id($self: &Self, id: ::core::any::TypeId) -> Option<&dyn $crate::Reflect> {
             $self.custom_attributes().get_by_id(id)
         }
 
         /// 判断是否含有某个属性
-        #[inline]
         pub fn has_attribute<T: $crate::Reflect>($self: &Self) -> bool {
             $self.custom_attributes().contains::<T>()
         }
 
         /// 判断是否含有某个属性
-        #[inline]
         pub fn has_attribute_by_id($self: &Self, id: ::core::any::TypeId) -> bool {
             $self.custom_attributes().contains_by_id(id)
         }
     };
 }
 
+macro_rules! impl_with_custom_attributes {
+    ($field:ident) => {
+        /// 修改属性（覆盖，而非添加）
+        #[inline]
+        pub fn with_custom_attributes(self, attributes: CustomAttributes) -> Self {
+            Self {
+                $field: Arc::new(attributes),
+                ..self
+            }
+        }
+    };
+}
+
 pub(crate) use impl_custom_attributes_fn;
+pub(crate) use impl_with_custom_attributes;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use core::mem::size_of;
+
+    #[test]
+    fn size_of_custom_attributes() {
+        let map_size = size_of::<TypeIdMap<CustomAttributes>>();
+        let size = size_of::<CustomAttributes>();
+        assert_eq!(map_size, size);
+        assert_eq!(size, 32usize, "Expected size_of::<Generics>() is 32, instead of {size}.");
+    }
+}
 

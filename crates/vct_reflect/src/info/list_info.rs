@@ -8,8 +8,8 @@ use crate::{Reflect, info::{
 pub struct ListInfo {
     ty: Type,
     generics: Generics,
-    item_info: fn() -> Option<&'static TypeInfo>,
     item_ty: Type,
+    item_info: fn() -> Option<&'static TypeInfo>,
     #[cfg(feature = "reflect_docs")]
     docs: Option<&'static str>,
 }
@@ -23,13 +23,13 @@ impl ListInfo {
     #[inline]
     pub fn new<
         TList: TypePath + List,
-        TItem: MaybeTyped + TypePath + Reflect /* + FromReflect */,
+        TItem: MaybeTyped + TypePath + Reflect,
     >() -> Self {
         Self {
             ty: Type::of::<TList>(),
             generics: Generics::new(),
-            item_info: TItem::maybe_type_info,
             item_ty: Type::of::<TItem>(),
+            item_info: TItem::maybe_type_info,
             #[cfg(feature = "reflect_docs")]
             docs: None,
         }

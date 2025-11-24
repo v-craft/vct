@@ -12,8 +12,8 @@ use crate::{
 pub struct ArrayInfo {
     ty: Type,
     generics: Generics,
-    item_info: fn() -> Option<&'static TypeInfo>,
     item_ty: Type,
+    item_info: fn() -> Option<&'static TypeInfo>,
     capacity: usize,
     #[cfg(feature = "reflect_docs")]
     docs: Option<&'static str>,
@@ -33,8 +33,8 @@ impl ArrayInfo {
         Self {
             ty: Type::of::<TArray>(),
             generics: Generics::new(),
-            item_info: TItem::maybe_type_info,
             item_ty: Type::of::<TItem>(),
+            item_info: TItem::maybe_type_info,
             capacity,
             #[cfg(feature = "reflect_docs")]
             docs: None,
