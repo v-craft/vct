@@ -1,3 +1,3 @@
 # V-Craft cfg marco
 
-一些用于控制编译的宏。
+Some macros used for compilation control.

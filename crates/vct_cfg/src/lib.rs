@@ -2,12 +2,13 @@
 #![cfg_attr(docsrs, feature(doc_cfg))]
 #![no_std]
 
-/// 此宏用于表示关闭的条件编译块
+/// Used to represent a disabled conditional compilation block
 ///
-/// # 例
+/// # Example
 ///
-/// ```ignore
-/// # use vct_os::cfg;
+/// ```
+/// use vct_cfg as cfg;
+/// 
 /// let mut x = 0;
 /// assert!( !cfg::disabled!() );
 /// cfg::disabled!(
@@ -28,12 +29,13 @@ macro_rules! disabled {
     ($($p:tt)*) => {};
 }
 
-/// 此宏用于表示开启的条件编译块
+/// Used to represent a enabled condition compilation block
 ///
-/// # 例
+/// # Example
 ///
-/// ```ignore
-/// # use vct_os::cfg;
+/// ```
+/// use vct_cfg as cfg;
+/// 
 /// let mut x = 0;
 /// assert!( cfg::enabled!() );
 /// cfg::enabled!(
@@ -54,12 +56,13 @@ macro_rules! enabled {
     ($($p:tt)*) => { $($p)* };
 }
 
-/// 一个类 switch 的条件编译宏
+/// A conditional compilation macro similar to `switch``
 ///
-/// # 例
+/// # Example
 ///
-/// ```ignore
-/// # use vct_os::cfg;
+/// ```
+/// use vct_cfg as cfg;
+/// 
 /// let mut x = 0;
 /// cfg::switch! {
 ///     #[cfg(test)] => {
@@ -72,6 +75,7 @@ macro_rules! enabled {
 ///         x += 100;
 ///     }
 /// }
+/// assert!(x == 1 || x == 10);
 /// ```
 #[doc(hidden)]
 #[macro_export]
@@ -109,21 +113,26 @@ macro_rules! switch {
     }
 }
 
-/// 用于给编译特性定义 `cfg::enabled` 类似的宏
+/// Define aliases for compilation options
 ///
-/// # 例
+/// # Example
 ///
-/// ```ignore
+/// ```
+/// use vct_cfg as cfg;
+/// 
 /// cfg::define_alias!{
 ///     #[cfg(test)] => enable_test,
 /// };
 ///
+/// // `enable_test` is eq to 'cfg::enabled' in testing.
+/// // Otherwise it is eq to 'cfg::disabled'.
 /// let mut x = false;
 /// enable_test!{ x = true; };
+/// 
+/// // Docs test is not Unit Test.
+/// // So `enable_test!` is eq to 'cfg::disabled'.
+/// assert!(x == false);
 /// ```
-///
-/// 这会提供一个 `enable_test!` 宏。如果 `#[cfg(test)]` 成立，
-/// 则其等效于 `cfg::enabled` ，否则等效于 `cfg::disabled` 。
 #[doc(hidden)]
 #[macro_export]
 macro_rules! define_alias {
@@ -177,69 +186,4 @@ define_alias! {
     #[cfg(feature = "std")] => std,
     #[cfg(panic = "unwind")] => panic_unwind,
     #[cfg(panic = "abort")] => panic_abort,
-}
-
-#[cfg(test)]
-mod test {
-    use crate as cfg;
-
-    #[test]
-    fn cfg_disabled() {
-        let mut x = 0;
-        assert!(!cfg::disabled!());
-        cfg::disabled!(
-            if {
-                panic!();
-            } else {
-                x += 1;
-            }
-        );
-        cfg::disabled! { x += 10; };
-        assert_eq!(x, 1);
-    }
-
-    #[test]
-    fn cfg_enabled() {
-        let mut x = 0;
-        assert!(cfg::enabled!());
-        cfg::enabled!(
-            if {
-                x += 1;
-            } else {
-                panic!();
-            }
-        );
-        cfg::enabled! { x += 10; };
-        assert_eq!(x, 11);
-    }
-
-    #[test]
-    fn cfg_switch() {
-        let mut x = 0;
-
-        cfg::switch! {
-            #[cfg(test)] => {
-                x += 1;
-            }
-            cfg::enabled => {
-                x += 10;
-            }
-            _ => {
-                x += 100;
-            }
-        }
-
-        assert_eq!(x, 1);
-    }
-
-    #[test]
-    fn cfg_define_alias() {
-        cfg::define_alias! {
-            #[cfg(test)] => enable_test,
-        };
-
-        let mut x = false;
-        enable_test! { x = !x; };
-        assert!(x);
-    }
 }

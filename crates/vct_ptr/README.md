@@ -1,19 +1,20 @@
 # V-Craft Pointer
 
-> 参考 [bevy_ptr](https://github.com/bevyengine/bevy/blob/main/crates/bevy_ptr/README.md).
+> Reference: [bevy_ptr](https://github.com/bevyengine/bevy/blob/main/crates/bevy_ptr/README.md).
 
-本库在 Rust 标准指针的基础上实现了一些额外的指针封装，它们将在 ECS 模块中被频繁使用。
+This crate implements several pointer wrappers on top of Rust’s standard pointer types
+that will be used frequently in the ECS module.
 
-一个安全的指针应该满足以下条件：
+A safe pointer should satisfy the following conditions:
 
-- 非空（非零值）
-- 指向有效区间（栈区或堆区）
-- 指向的目标对象已初始化
-- 满足对齐要求
-- 携带的生命周期标识对目标有效
-- 满足 Rust 别名规则：任何时刻仅有一个可变引用或任意个不可变引用
+- Non-null
+- Points to a valid memory range (stack or heap)
+- The pointee is initialized
+- Meets alignment requirements
+- Carries a lifetime that is valid for the pointee
+- Satisfies Rust aliasing rules: at any time either one mutable reference or any number of immutable references
 
-## 标准库指针
+## Standard library pointers
 
 |Pointer Type       |Lifetime'ed|Mutable|Strongly Typed|Aligned|Not Null|Forbids Aliasing|Forbids Arithmetic|
 |-------------------|-----------|-------|--------------|-------|--------|----------------|------------------|
@@ -27,7 +28,7 @@
 |`*const ()`        |No         |No     |No            |No     |No      |No              |No                |
 |`*mut ()`          |No         |Yes    |No            |No     |No      |No              |No                |
 
-## 本库提供的额外指针
+## Extra pointers in this crate
 
 |Pointer Type         |Lifetime'ed|Mutable|Strongly Typed|Aligned|Not Null|Forbids Aliasing|Forbids Arithmetic|
 |---------------------|-----------|-------|--------------|-------|--------|----------------|------------------|
@@ -38,19 +39,21 @@
 |`MovingPtr<'a, T>`   |Yes        |Yes    |Yes           |Maybe  |Yes     |Yes             |Yes               |
 |`ThinSlicePtr<'a, T>`|Yes        |No     |Yes           |Yes    |Yes     |Yes             |Yes               |
 
-`ConstNonNull<T>` 类似于 `NonNull<T>`，它是非空的常量指针，无法直接转换成可修改目标的类型（如可变引用）。
+`ConstNonNull<T>` is similar to `NonNull<T>`:
+a non-null pointer that cannot be used to obtain mutable references directly.
 
-`Ptr<'a>` 和 `PtrMut<'a>` 类似于类型擦除的 `&T` 和 `&mut T` 。与裸指针相比，它们添加了生命周期标识并支持指针对齐检查，以尽可能接近引用的安全性。
+`Ptr<'a>` and `PtrMut<'a>` are like type-erased `&T` and `&mut T`. 
+Compared to raw pointers they add a lifetime and optional alignment checks to approach the safety of references.
 
-`OwningPtr<'a>` 字面意思是“所有权指针”，你可以通过此指针消耗指向的目标或执行它的 `Drop::drop` 函数，类似 `&'a mut ManuallyDrop<dyn Any>`。
-需要注意，它并不管理目标的内存资源，因此通常用于指向栈区对象或 `Vec` 等容器管理的对象。
-存在此指针对象时不应该通过其他方式操作目标，即遵守 Rust 的别名规则。
+`OwningPtr<'a>` is an “ownership pointer”: 
+it can be used to consume the pointee or invoke its `Drop::drop` (similar to `&'a mut ManuallyDrop<dyn Any>`). 
+It does **not** manage memory of the pointee(so typically points to stack values or objects managed by other containers).
 
-`MovingPtr<'a, T>` 则更进一步，它携带了类型信息，因此在指针自身消亡时会自动执行目标的 `drop` 函数。
-将其取名为 `Moving` 是因为此指针通常用于廉价“移动”大对象（参考C++的移动语义）。
+`MovingPtr<'a, T>` carries static type information and will call the pointee’s `Drop` impl when the pointer is dropped. 
+It is designed for cheap “moves” of larger logical objects by pointing at a small value whose Drop frees the larger resource.
 
-> 大对象通常是一个小内存对象指向一个大内存对象，小对象的 `drop` 函数负责释放大对象。
-> 我们使用 `MovingPtr` 指向这个小对象并托管它 `drop` 函数，移动数据时只需拷贝这小块内存。
+Note: large logical objects are often represented by a small control object whose drop releases the big resource. `MovingPtr` points to that small control object so moving it is cheap.
 
-`ThinSlicePtr` 是一个薄切片指针，它的特点是不包含切片的长度信息（只含一个指针），因此更加轻量。
-但缺点是通过它访问元素是不安全的，无法进行边界检查（Debug模式将保留长度信息以方便调试）。
+`ThinSlicePtr` is a thin slice pointer that does not store length (only a pointer), making it lighter.
+Access through it is unsafe because bounds checks are not available;
+in debug builds it may retain length info to help debugging.
