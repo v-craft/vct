@@ -1,8 +1,13 @@
-use crate::{Reflect, info::{
-    Generics, Type, TypePath, docs_macro::impl_docs_fn, generics::impl_generic_fn, type_struct::impl_type_fn
-}, ops::Set};
+use crate::{
+    Reflect,
+    info::{
+        Generics, Type, TypePath, docs_macro::impl_docs_fn, generics::impl_generic_fn,
+        type_struct::impl_type_fn,
+    },
+    ops::Set,
+};
 
-
+/// Container for storing compile-time set-like information
 #[derive(Clone, Debug)]
 pub struct SetInfo {
     ty: Type,
@@ -17,12 +22,9 @@ impl SetInfo {
     impl_type_fn!(ty);
     impl_generic_fn!(generics);
 
-    /// 创建新容器
+    /// Create a new container
     #[inline]
-    pub fn new<
-        TSet: TypePath + Set, 
-        TValue: TypePath + Reflect,
-    >() -> Self {
+    pub fn new<TSet: TypePath + Set, TValue: TypePath + Reflect>() -> Self {
         Self {
             ty: Type::of::<TSet>(),
             generics: Generics::new(),
@@ -32,7 +34,7 @@ impl SetInfo {
         }
     }
 
-    /// 获取元素类型
+    /// Get the [`Type`] of item
     #[inline]
     pub fn value_ty(&self) -> Type {
         self.value_ty

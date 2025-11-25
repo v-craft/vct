@@ -1,10 +1,14 @@
-use core::{fmt, error, any::{Any, TypeId}};
 use crate::info::{
-    ArrayInfo, EnumInfo, ListInfo, MapInfo, OpaqueInfo, SetInfo, StructInfo, TupleInfo, TupleStructInfo, Type, TypePathTable, generics::impl_generic_fn
+    ArrayInfo, EnumInfo, ListInfo, MapInfo, OpaqueInfo, SetInfo, StructInfo, TupleInfo,
+    TupleStructInfo, Type, TypePathTable, generics::impl_generic_fn,
+};
+use core::{
+    any::{Any, TypeId},
+    error, fmt,
 };
 
-/// 一个用于表示”类型的类型“的枚举
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+/// A Enum for representing the kind of type
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ReflectKind {
     Struct,
     TupleStruct,
@@ -41,42 +45,37 @@ pub struct ReflectKindError {
 
 impl fmt::Display for ReflectKindError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "kind mismatch: expected {:?}, received {:?}", self.expected, self.received)
+        write!(
+            f,
+            "kind mismatch: expected {:?}, received {:?}",
+            self.expected, self.received
+        )
     }
 }
 
 impl error::Error for ReflectKindError {}
 
+/// A Enum for representing all type info
 #[derive(Debug, Clone)]
 pub enum TypeInfo {
-    /// 结构体的类型信息
     Struct(StructInfo),
-    /// 结构体元组的类型信息
     TupleStruct(TupleStructInfo),
-    /// 元组的类型信息
     Tuple(TupleInfo),
-    /// 类列表的类型信息
     List(ListInfo),
-    /// 数组的类型信息
     Array(ArrayInfo),
-    /// 键值对的类型信息
     Map(MapInfo),
-    /// 集合的类型信息
     Set(SetInfo),
-    /// 枚举的类型信息
     Enum(EnumInfo),
-    /// 不透明类型（无法再细分）的类型信息
     Opaque(OpaqueInfo),
 }
 
 macro_rules! impl_cast_method {
     ($name:ident : $kind:ident => $info:ident) => {
-        /// 类型转换函数
         #[inline]
         pub fn $name(&self) -> Result<&$info, ReflectKindError> {
             match self {
                 Self::$kind(info) => Ok(info),
-                _ => Err(ReflectKindError{
+                _ => Err(ReflectKindError {
                     expected: ReflectKind::$kind,
                     received: self.kind(),
                 }),
@@ -107,8 +106,8 @@ impl TypeInfo {
         Self::Enum(info) => info.generics(),
         Self::Opaque(info) => info.generics(),
     });
-    
-    /// 获取底层类型
+
+    /// Get underlying [`Type`]
     pub fn ty(&self) -> &Type {
         // Not inline: Avoid recursive inline
         match self {
@@ -123,31 +122,32 @@ impl TypeInfo {
             Self::Opaque(info) => info.ty(),
         }
     }
-    /// 获取类型 id
+
+    /// Get [`TypeId`]
     #[inline]
     pub fn type_id(&self) -> TypeId {
         self.ty().id()
     }
 
-    /// 获取类路径表
+    /// Get [`TypePathTable`]
     #[inline]
     pub fn type_path_table(&self) -> &TypePathTable {
         self.ty().type_path_table()
     }
 
-    /// 获取完整类名
+    /// Get full type name
     #[inline]
     pub fn type_path(&self) -> &'static str {
         self.ty().path()
     }
 
-    /// 比较类型是否相同
+    /// Check if the types are same
     #[inline]
     pub fn is<T: Any>(&self) -> bool {
         self.ty().is::<T>()
     }
 
-    /// 获取类型的类型
+    /// Get [`ReflectKind`]
     #[inline]
     pub fn kind(&self) -> ReflectKind {
         match self {
@@ -163,6 +163,7 @@ impl TypeInfo {
         }
     }
 
+    /// Get docs
     #[cfg(feature = "reflect_docs")]
     pub fn docs(&self) -> Option<&str> {
         // Not inline: Avoid recursive inline
@@ -179,6 +180,3 @@ impl TypeInfo {
         }
     }
 }
-
-
-

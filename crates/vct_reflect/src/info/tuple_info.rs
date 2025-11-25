@@ -1,11 +1,13 @@
-use alloc::boxed::Box;
 use crate::{
     info::{
-        Generics, Type, TypePath, UnnamedField, docs_macro::impl_docs_fn, generics::impl_generic_fn, type_struct::impl_type_fn
-    }, ops::Tuple
+        Generics, Type, TypePath, UnnamedField, docs_macro::impl_docs_fn,
+        generics::impl_generic_fn, type_struct::impl_type_fn,
+    },
+    ops::Tuple,
 };
+use alloc::boxed::Box;
 
-/// 存储编译时元组信息的容器
+/// Container for storing compile-time tuple information
 #[derive(Clone, Debug)]
 pub struct TupleInfo {
     ty: Type,
@@ -20,9 +22,9 @@ impl TupleInfo {
     impl_type_fn!(ty);
     impl_generic_fn!(generics);
 
-    /// 创建新容器
-    /// 
-    /// - 内部字段顺序是固定的
+    /// Create a new container
+    ///
+    /// The order of fields inside the container is fixed
     #[inline]
     pub fn new<T: TypePath + Tuple>(fields: &[UnnamedField]) -> Self {
         Self {
@@ -34,24 +36,21 @@ impl TupleInfo {
         }
     }
 
-    /// 根据索引获取字段详情
+    /// Get [`UnnamedField`] by field index
     #[inline]
     pub fn field_at(&self, index: usize) -> Option<&UnnamedField> {
         self.fields.get(index)
     }
 
-    /// 获取字段的迭代器
+    /// Get the iter of [`UnnamedField`]
     #[inline]
     pub fn iter(&self) -> core::slice::Iter<'_, UnnamedField> {
         self.fields.iter()
     }
 
-    /// 获取字段总数
+    /// Get the number of fields
     #[inline]
     pub fn field_len(&self) -> usize {
         self.fields.len()
     }
 }
-
-
-

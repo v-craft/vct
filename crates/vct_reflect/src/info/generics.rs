@@ -1,16 +1,13 @@
-use core::ops::Deref;
 use alloc::{borrow::Cow, boxed::Box};
+use core::ops::Deref;
 use vct_os::sync::Arc;
 
 use crate::{
-    Reflect, 
-    info::{
-        Type, TypePath,
-        type_struct::impl_type_fn,
-    },
+    Reflect,
+    info::{Type, TypePath, type_struct::impl_type_fn},
 };
 
-/// 存储泛型类型参数信息的结构体
+/// Container for storing generic type parameter information
 #[derive(Clone, Debug)]
 pub struct TypeParamInfo {
     ty: Type,
@@ -19,10 +16,9 @@ pub struct TypeParamInfo {
 }
 
 impl TypeParamInfo {
-    // `is` `ty` `type_id` `type_path` `type_path_table`
     impl_type_fn!(ty);
 
-    /// 基于指定类型和名称创建新对象
+    /// Create a new container
     #[inline]
     pub fn new<T: TypePath + ?Sized>(name: impl Into<Cow<'static, str>>) -> Self {
         Self {
@@ -32,19 +28,19 @@ impl TypeParamInfo {
         }
     }
 
-    /// 获取参数名
+    /// Get generic parameter name
     #[inline]
     pub fn name(&self) -> &Cow<'static, str> {
         &self.name
     }
 
-    /// 获取参数默认类型
+    /// Get default type
     #[inline]
     pub fn default(&self) -> Option<&Type> {
         self.default.as_ref()
     }
 
-    /// 修改默认类型
+    /// Modify default type
     #[inline]
     pub fn with_default<T: TypePath + ?Sized>(mut self) -> Self {
         self.default = Some(Type::of::<T>());
@@ -52,20 +48,19 @@ impl TypeParamInfo {
     }
 }
 
-/// 存储泛型常量参数信息的结构体
+/// Container for storing generic const parameter information
 #[derive(Clone, Debug)]
 pub struct ConstParamInfo {
     ty: Type,
     name: Cow<'static, str>,
-    // 常量参数是值且类型确定，因此使用 Arc<dyn Reflect> 存储
+    // Use `Arc<>` to support `Clone` trait
     default: Option<Arc<dyn Reflect>>,
 }
 
 impl ConstParamInfo {
-    // `is` `ty` `type_id` `type_path` `type_path_table`
     impl_type_fn!(ty);
 
-    /// 基于指定类型和名称创建新对象
+    /// Create a new container
     #[inline]
     pub fn new<T: TypePath + ?Sized>(name: impl Into<Cow<'static, str>>) -> Self {
         Self {
@@ -75,24 +70,27 @@ impl ConstParamInfo {
         }
     }
 
-    /// 获取参数名
+    /// Get generic parameter name
     #[inline]
     pub fn name(&self) -> &Cow<'static, str> {
         &self.name
     }
 
-    /// 获取默认值
+    /// Get default const value
     #[inline]
     pub fn default(&self) -> Option<&dyn Reflect> {
         self.default.as_deref()
     }
 
-    /// 设置默认值
+    /// Modify default type
     pub fn with_default<T: Reflect + 'static>(mut self, default: T) -> Self {
         let arc = Arc::new(default);
 
         #[cfg(not(feature = "std"))]
-        #[expect(unsafe_code, reason = "unsized coercion is unstable without using std Arc")]
+        #[expect(
+            unsafe_code,
+            reason = "unsized coercion is unstable without using std Arc"
+        )]
         // See: https://doc.rust-lang.org/alloc/sync/struct.Arc.html -- impl CoerceUnsized for Arc
         // TODO: Remove this after CoerceUnsized stabilization.
         let arc = unsafe { Arc::from_raw(Arc::into_raw(arc) as *const dyn Reflect) };
@@ -102,12 +100,10 @@ impl ConstParamInfo {
     }
 }
 
-/// 表示单个泛型参数的枚举
+/// A Enum representing a single generic parameter
 #[derive(Clone, Debug)]
 pub enum GenericInfo {
-    /// 泛型的类型参数
     Type(TypeParamInfo),
-    /// 泛型的常量参数
     Const(ConstParamInfo),
 }
 
@@ -131,7 +127,7 @@ impl GenericInfo {
         Self::Const(info) => info.ty(),
     });
 
-    /// 获取泛型名
+    /// Get param name
     #[inline]
     pub fn name(&self) -> &Cow<'static, str> {
         match self {
@@ -140,7 +136,7 @@ impl GenericInfo {
         }
     }
 
-    /// 判断是不是常量参数
+    /// Check if self is const parameter
     #[inline]
     pub fn is_const(&self) -> bool {
         match self {
@@ -150,28 +146,29 @@ impl GenericInfo {
     }
 }
 
-/// 用于记录类型泛型参数列表的结构体
+/// Container for storing a list of generic type parameters
 #[derive(Clone, Default, Debug)]
 pub struct Generics(Box<[GenericInfo]>);
 
 impl Generics {
-    /// 创建空对象
+    /// Create a new empty container
     #[inline]
     pub fn new() -> Self {
         Self(Box::new([]))
     }
 
-    /// 根据参数名查询泛型参数
-    /// 
-    /// 线性时间复杂度
+    /// Get GenericInfo by parameter name
+    ///
+    /// Complexity: O(N)
     #[inline]
     pub fn get(&self, name: &str) -> Option<&GenericInfo> {
         self.0.iter().find(|info| info.name() == name)
     }
 
-    /// 末尾插入新参数
-    /// 
-    /// 线性时间复杂度
+    /// Push back new paramter
+    ///
+    /// Complexity: O(N)
+    #[inline]
     pub fn with(mut self, info: impl Into<GenericInfo>) -> Self {
         self.0 = IntoIterator::into_iter(self.0)
             .chain(core::iter::once(info.into()))
@@ -195,14 +192,15 @@ impl Deref for Generics {
     }
 }
 
+/// impl `with_generics` and `generics`
 macro_rules! impl_generic_fn {
     ($field:ident) => {
         $crate::info::generics::impl_generic_fn!(self => &self.$field);
 
-        /// 替换自身的泛型信息结构体
+        /// Replace its own generic information
         #[inline]
         pub fn with_generics(
-            mut self, 
+            mut self,
             generics: $crate::info::Generics
         ) -> Self {
             self.$field = generics;
@@ -210,7 +208,7 @@ macro_rules! impl_generic_fn {
         }
     };
     ($self:ident => $expr:expr) => {
-        /// 根据表达式获取 self 中的泛型信息结构体
+        /// Get generics from self based on expressions
         #[inline]
         pub fn generics($self: &Self) -> &$crate::info::Generics {
             $expr
@@ -219,17 +217,3 @@ macro_rules! impl_generic_fn {
 }
 
 pub(crate) use impl_generic_fn;
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use core::mem::size_of;
-
-    #[test]
-    fn size_of_generics() {
-        let box_size = size_of::<Box<[GenericInfo]>>();
-        let size = size_of::<Generics>();
-        assert_eq!(box_size, size);
-        assert_eq!(size, 16usize, "Expected size_of::<Generics>() is 16, instead of {size}.");
-    }
-}

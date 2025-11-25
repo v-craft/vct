@@ -5,10 +5,9 @@ extern crate std;
 
 extern crate alloc;
 
+pub mod cell;
 pub mod info;
 pub mod ops;
-pub mod cell;
 
 mod reflect;
-pub use reflect::*;
-// PartialReflect, Reflect,
+pub use reflect::{PartialReflect, Reflect, reflect_hasher};

@@ -1,30 +1,14 @@
 use crate::{
-    Reflect, PartialReflect,
-    info::{
-        TypePath, 
-        TypeInfo,
-    },
+    PartialReflect, Reflect,
+    info::{TypeInfo, TypePath},
 };
 
+/// A static accessor to compile-time type information.
 pub trait Typed: Reflect + TypePath {
     fn type_info() -> &'static TypeInfo;
 }
 
-pub trait MaybeTyped: PartialReflect{
-    fn maybe_type_info() -> Option<&'static TypeInfo> {
-        None
-    }
-}
-
-// 在各类型定义处实现
-// impl MaybeTyped for DynamicEnum {}
-// impl MaybeTyped for DynamicTupleStruct {}
-// impl MaybeTyped for DynamicStruct {}
-// impl MaybeTyped for DynamicMap {}
-// impl MaybeTyped for DynamicList {}
-// impl MaybeTyped for DynamicArray {}
-// impl MaybeTyped for DynamicTuple {}
-
+/// Dynamic dispatch for [`Typed`].
 pub trait DynamicTyped {
     /// See [`Typed::type_info`].
     fn reflect_type_info(&self) -> &'static TypeInfo;
@@ -37,3 +21,27 @@ impl<T: Typed> DynamicTyped for T {
     }
 }
 
+/// A wrapper trait around [`Typed`].
+pub trait MaybeTyped: PartialReflect {
+    #[inline]
+    fn maybe_type_info() -> Option<&'static TypeInfo> {
+        None
+    }
+}
+
+impl<T: Typed> MaybeTyped for T {
+    #[inline]
+    fn maybe_type_info() -> Option<&'static TypeInfo> {
+        Some(T::type_info())
+    }
+}
+
+// ↓ At the definition of the type itself
+// impl MaybeTyped for DynamicEnum {}
+// impl MaybeTyped for DynamicSet {}
+// impl MaybeTyped for DynamicTupleStruct {}
+// impl MaybeTyped for DynamicStruct {}
+// impl MaybeTyped for DynamicMap {}
+// impl MaybeTyped for DynamicList {}
+// impl MaybeTyped for DynamicArray {}
+// impl MaybeTyped for DynamicTuple {}

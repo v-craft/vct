@@ -1,13 +1,18 @@
-use alloc::boxed::Box;
 use crate::{
-    PartialReflect, info::{
-        ReflectKind, ReflectKindError,
-    }, ops::{
-        Array, List, Set, Struct, Tuple, TupleStruct,
-        Map, Enum,
-    }
+    PartialReflect,
+    info::{ReflectKind, ReflectKindError},
+    ops::{Array, Enum, List, Map, Set, Struct, Tuple, TupleStruct},
 };
+use alloc::boxed::Box;
 
+/// An immutable enumeration of ["kinds"] of a reflected type.
+///
+/// Each variant contains a trait object with methods specific to a kind of
+/// type.
+///
+/// A [`ReflectRef`] is obtained via [`PartialReflect::reflect_ref`].
+///
+/// ["kinds"]: ReflectKind
 pub enum ReflectRef<'a> {
     Struct(&'a dyn Struct),
     TupleStruct(&'a dyn TupleStruct),
@@ -20,6 +25,14 @@ pub enum ReflectRef<'a> {
     Opaque(&'a dyn PartialReflect),
 }
 
+/// A mutable enumeration of ["kinds"] of a reflected type.
+///
+/// Each variant contains a trait object with methods specific to a kind of
+/// type.
+///
+/// A [`ReflectMut`] is obtained via [`PartialReflect::reflect_mut`].
+///
+/// ["kinds"]: ReflectKind
 pub enum ReflectMut<'a> {
     Struct(&'a mut dyn Struct),
     TupleStruct(&'a mut dyn TupleStruct),
@@ -32,6 +45,14 @@ pub enum ReflectMut<'a> {
     Opaque(&'a mut dyn PartialReflect),
 }
 
+/// An owned enumeration of ["kinds"] of a reflected type.
+///
+/// Each variant contains a trait object with methods specific to a kind of
+/// type.
+///
+/// A [`ReflectOwned`] is obtained via [`PartialReflect::reflect_owned`].
+///
+/// ["kinds"]: ReflectKind
 pub enum ReflectOwned {
     Struct(Box<dyn Struct>),
     TupleStruct(Box<dyn TupleStruct>),
@@ -61,7 +82,6 @@ macro_rules! impl_kind_fn {
         }
     };
 }
-
 
 macro_rules! impl_cast_fn {
     ($name:ident : Opaque => $retval:ty) => {
@@ -117,12 +137,12 @@ impl<'a> ReflectMut<'a> {
 impl ReflectOwned {
     impl_kind_fn!();
     impl_cast_fn!(into_struct: Struct => Box<dyn Struct>);
-    impl_cast_fn!(as_tuple_struct: TupleStruct => Box<dyn TupleStruct>);
-    impl_cast_fn!(as_tuple: Tuple => Box<dyn Tuple>);
-    impl_cast_fn!(as_list: List => Box<dyn List>);
-    impl_cast_fn!(as_array: Array => Box<dyn Array>);
-    impl_cast_fn!(as_map: Map => Box<dyn Map>);
-    impl_cast_fn!(as_set: Set => Box<dyn Set>);
-    impl_cast_fn!(as_enum: Enum => Box<dyn Enum>);
-    impl_cast_fn!(as_opaque: Opaque => Box<dyn PartialReflect>);
+    impl_cast_fn!(into_tuple_struct: TupleStruct => Box<dyn TupleStruct>);
+    impl_cast_fn!(into_tuple: Tuple => Box<dyn Tuple>);
+    impl_cast_fn!(into_list: List => Box<dyn List>);
+    impl_cast_fn!(into_array: Array => Box<dyn Array>);
+    impl_cast_fn!(into_map: Map => Box<dyn Map>);
+    impl_cast_fn!(into_set: Set => Box<dyn Set>);
+    impl_cast_fn!(into_enum: Enum => Box<dyn Enum>);
+    impl_cast_fn!(into_opaque: Opaque => Box<dyn PartialReflect>);
 }

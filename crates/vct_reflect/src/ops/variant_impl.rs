@@ -1,9 +1,8 @@
 use crate::{
     PartialReflect,
-    ops::{DynamicStruct, DynamicTuple, Struct, Tuple, Enum},
-    info::VariantType,
+    info::VariantKind,
+    ops::{DynamicStruct, DynamicTuple, Enum, Struct, Tuple},
 };
-
 
 #[derive(Default, Debug)] // impl Debug: All fields have already impl Debug
 pub enum DynamicVariant {
@@ -14,7 +13,6 @@ pub enum DynamicVariant {
 }
 
 impl Clone for DynamicVariant {
-    #[inline] // inline: to_dynamic_xxxx is not inline
     fn clone(&self) -> Self {
         match self {
             Self::Unit => Self::Unit,
@@ -54,6 +52,7 @@ pub enum VariantField<'a> {
 
 impl<'a> VariantField<'a> {
     /// Returns the name of a struct variant field, or [`None`] for a tuple variant field.
+    #[inline]
     pub fn name(&self) -> Option<&'a str> {
         if let Self::Struct(name, ..) = self {
             Some(*name)
@@ -63,6 +62,7 @@ impl<'a> VariantField<'a> {
     }
 
     /// Gets a reference to the value of this field.
+    #[inline]
     pub fn value(&self) -> &'a dyn PartialReflect {
         match *self {
             Self::Struct(_, value) | Self::Tuple(value) => value,
@@ -70,6 +70,7 @@ impl<'a> VariantField<'a> {
     }
 }
 
+/// An iterator over the fields in the current enum variant.
 pub struct VariantFieldIter<'a> {
     container: &'a dyn Enum,
     index: usize,
@@ -90,9 +91,9 @@ impl<'a> Iterator for VariantFieldIter<'a> {
 
     fn next(&mut self) -> Option<Self::Item> {
         let value = match self.container.variant_type() {
-            VariantType::Unit => None,
-            VariantType::Tuple => Some(VariantField::Tuple(self.container.field_at(self.index)?)),
-            VariantType::Struct => {
+            VariantKind::Unit => None,
+            VariantKind::Tuple => Some(VariantField::Tuple(self.container.field_at(self.index)?)),
+            VariantKind::Struct => {
                 let name = self.container.name_at(self.index)?;
                 Some(VariantField::Struct(name, self.container.field(name)?))
             }
@@ -109,4 +110,3 @@ impl<'a> Iterator for VariantFieldIter<'a> {
 }
 
 impl<'a> ExactSizeIterator for VariantFieldIter<'a> {}
-

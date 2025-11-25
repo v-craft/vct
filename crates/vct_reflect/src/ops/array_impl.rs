@@ -1,20 +1,14 @@
-use core::{
-    fmt,
-    any::TypeId,
-    hash::{Hash, Hasher},
-};
-use alloc::{
-    vec::Vec,
-    boxed::Box,
-};
 use crate::{
-    PartialReflect, Reflect, reflect_hasher,
-    ops::{
-        ReflectRef, ReflectMut, ReflectOwned, ApplyError,
-    },
-    info::{
-        TypeInfo, TypePath, MaybeTyped, ReflectKind, ArrayInfo,
-    },
+    PartialReflect, Reflect,
+    info::{ArrayInfo, MaybeTyped, ReflectKind, TypeInfo, TypePath},
+    ops::{ApplyError, ReflectMut, ReflectOwned, ReflectRef},
+    reflect_hasher,
+};
+use alloc::{boxed::Box, vec::Vec};
+use core::{
+    any::TypeId,
+    fmt,
+    hash::{Hash, Hasher},
 };
 
 // Not impl Default: The length of Array needs to be determined.
@@ -24,25 +18,30 @@ pub struct DynamicArray {
 }
 
 impl TypePath for DynamicArray {
+    #[inline]
     fn type_path() -> &'static str {
         "vct_reflect::ops::DynamicArray"
     }
-
+    #[inline]
     fn short_type_path() -> &'static str {
         "DynamicArray"
     }
+    #[inline]
     fn type_ident() -> Option<&'static str> {
         Some("DynamicArray")
     }
+    #[inline]
     fn crate_name() -> Option<&'static str> {
         Some("vct_reflect")
     }
+    #[inline]
     fn module_path() -> Option<&'static str> {
         Some("vct_reflect::ops")
     }
 }
 
 impl DynamicArray {
+    /// Creates a new [`DynamicArray`].
     #[inline]
     pub fn new(values: Box<[Box<dyn PartialReflect>]>) -> Self {
         Self {
@@ -51,6 +50,11 @@ impl DynamicArray {
         }
     }
 
+    /// Sets the [`TypeInfo`] to be represented by this `DynamicArray`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the given [`TypeInfo`] is not a [`TypeInfo::Array`].
     pub fn set_target_type_info(&mut self, target_type: Option<&'static TypeInfo>) {
         if let Some(target_type) = target_type {
             assert!(
@@ -147,22 +151,8 @@ impl PartialReflect for DynamicArray {
     }
 
     fn reflect_partial_eq(&self, other: &dyn PartialReflect) -> Option<bool> {
-        let ReflectRef::Array(other) = other.reflect_ref() else {
-            return Some(false);
-        };
-
-        if self.len() != other.len() {
-            return Some(false);
-        }
-
-        for (item, other_item) in self.iter().zip(other.iter()) {
-            let result = item.reflect_partial_eq(other_item);
-            if result != Some(true) {
-                return Some(false);
-            }
-        }
-
-        Some(true)
+        // Not Inline: `array_partial_eq()` is inline always
+        array_partial_eq(self, other)
     }
 
     #[inline]
@@ -218,29 +208,50 @@ impl<'a> IntoIterator for &'a DynamicArray {
     type Item = &'a dyn PartialReflect;
     type IntoIter = ArrayItemIter<'a>;
 
+    #[inline]
     fn into_iter(self) -> Self::IntoIter {
         self.iter()
     }
 }
 
+/// A trait used to power [array-like] operations via [reflection].
+///
+/// This corresponds to true Rust arrays like `[T; N]`,
+/// but also to any fixed-size linear sequence types.
+/// It is expected that implementors of this trait uphold this contract
+/// and maintain a fixed size as returned by the [`Array::len`] method.
 pub trait Array: PartialReflect {
+    /// Returns a reference to the element at `index`, or `None` if out of bounds.
     fn get(&self, index: usize) -> Option<&dyn PartialReflect>;
+
+    /// Returns a mutable reference to the element at `index`, or `None` if out of bounds.
     fn get_mut(&mut self, index: usize) -> Option<&mut dyn PartialReflect>;
+
+    /// Returns the number of elements in the array.
     fn len(&self) -> usize;
 
+    /// Returns `true` if the collection contains no elements.
     #[inline]
     fn is_empty(&self) -> bool {
         self.len() == 0
     }
 
+    /// Returns an iterator over the array.
     fn iter(&self) -> ArrayItemIter<'_>;
+
+    /// Drain the elements of this array to get a vector of owned values.
     fn drain(self: Box<Self>) -> Vec<Box<dyn PartialReflect>>;
+
+    /// Creates a new [`DynamicArray`] from this array.
     fn to_dynamic_array(&self) -> DynamicArray {
         DynamicArray {
             target_type: self.get_target_type_info(),
             values: self.iter().map(PartialReflect::to_dynamic).collect(),
         }
     }
+
+    /// Will return `None` if [`TypeInfo`] is not available.
+    #[inline]
     fn get_target_array_info(&self) -> Option<&'static ArrayInfo> {
         self.get_target_type_info()?.as_array().ok()
     }
@@ -251,6 +262,7 @@ pub struct ArrayItemIter<'a> {
     index: usize,
 }
 
+/// An iterator over an [`Array`].
 impl ArrayItemIter<'_> {
     #[inline(always)]
     pub fn new(array: &dyn Array) -> ArrayItemIter<'_> {
@@ -304,8 +316,14 @@ impl Array for DynamicArray {
     }
 }
 
-
+/// A function used to assist in the implementation of `reflect_partial_eq`
+///
+/// It's `inline(always)`, Usually recommended only for impl `reflect_partial_eq`.
+#[inline(always)]
 pub fn array_partial_eq<A: Array + ?Sized>(x: &A, y: &dyn PartialReflect) -> Option<bool> {
+    // Inline: this function **should only** be used to impl `PartialReflect::reflect_partial_eq`
+    // Compilation times is related to the quantity of type A.
+    // Therefore, inline has no negative effects.
     let ReflectRef::Array(y) = y.reflect_ref() else {
         return Some(false);
     };
@@ -324,11 +342,13 @@ pub fn array_partial_eq<A: Array + ?Sized>(x: &A, y: &dyn PartialReflect) -> Opt
     Some(true)
 }
 
+/// The default debug formatter for [`Array`] types.
 pub fn array_debug(dyn_array: &dyn Array, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    // This function should only be used to impl `PartialReflect::debug`
+    // Non Inline: only be compiled once -> reduce compilation times
     let mut debug = f.debug_list();
     for item in dyn_array.iter() {
         debug.entry(&item as &dyn fmt::Debug);
     }
     debug.finish()
 }
-

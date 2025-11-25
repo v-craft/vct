@@ -1,13 +1,18 @@
-use alloc::boxed::Box;
-use vct_utils::collections::HashMap;
-use vct_os::sync::Arc;
 use crate::{
     info::{
-        CustomAttributes, Generics, NamedField, Type, TypePath, attributes::{impl_custom_attributes_fn, impl_with_custom_attributes}, docs_macro::impl_docs_fn, generics::impl_generic_fn, type_struct::impl_type_fn
-    }, ops::Struct
+        CustomAttributes, Generics, NamedField, Type, TypePath,
+        attributes::{impl_custom_attributes_fn, impl_with_custom_attributes},
+        docs_macro::impl_docs_fn,
+        generics::impl_generic_fn,
+        type_struct::impl_type_fn,
+    },
+    ops::Struct,
 };
+use alloc::boxed::Box;
+use vct_os::sync::Arc;
+use vct_utils::collections::HashMap;
 
-/// 存储编译时结构体信息的容器
+/// Container for storing compile-time struct information
 #[derive(Clone, Debug)]
 pub struct StructInfo {
     ty: Type,
@@ -27,14 +32,14 @@ impl StructInfo {
     impl_custom_attributes_fn!(custom_attributes);
     impl_with_custom_attributes!(custom_attributes);
 
-    /// 创建新容器
-    /// 
-    /// - fields 在容器内部的顺序是固定的
+    /// Create a new container
+    ///
+    /// The order of fields inside the container is fixed
     pub fn new<T: TypePath + Struct>(fields: &[NamedField]) -> Self {
         let field_indices = fields
             .iter()
             .enumerate()
-            .map(|(index,  field)| (field.name(), index))
+            .map(|(index, field)| (field.name(), index))
             .collect();
 
         let field_names = fields.iter().map(NamedField::name).collect();
@@ -51,13 +56,13 @@ impl StructInfo {
         }
     }
 
-    /// 获取字段名列表的切片
+    /// Get the list of field names
     #[inline]
     pub fn field_names(&self) -> &[&'static str] {
         &self.field_names
     }
 
-    /// 根据字段名查询字段详情
+    /// Get [`NamedField`] by field name
     #[inline]
     pub fn field(&self, name: &str) -> Option<&NamedField> {
         self.field_indices
@@ -65,25 +70,25 @@ impl StructInfo {
             .map(|index| &self.fields[*index])
     }
 
-    /// 根据索引（序号）查询字段详情
+    /// Get [`NamedField`] by field index
     #[inline]
     pub fn field_at(&self, index: usize) -> Option<&NamedField> {
         self.fields.get(index)
     }
 
-    /// 查询字段的索引（序号）
+    /// Get the index of field by name
     #[inline]
     pub fn index_of(&self, name: &str) -> Option<usize> {
         self.field_indices.get(name).copied()
     }
 
-    /// 获取字段的迭代器
+    /// Get the iter of [`NamedField`]
     #[inline]
     pub fn iter(&self) -> core::slice::Iter<'_, NamedField> {
         self.fields.iter()
     }
 
-    /// 获取字段总数
+    /// Get the number of fields
     #[inline]
     pub fn field_len(&self) -> usize {
         self.fields.len()

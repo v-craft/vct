@@ -1,24 +1,18 @@
-use alloc::{
-    boxed::Box, format, string::String
-};
-use vct_os::sync::Arc;
-use vct_utils::collections::HashMap;
 use crate::{
-    ops::Enum,
     info::{
-        CustomAttributes, Generics,
-        Type, TypePath, VariantInfo, 
-        attributes::{
-            impl_custom_attributes_fn,
-            impl_with_custom_attributes,
-        },
+        CustomAttributes, Generics, Type, TypePath, VariantInfo,
+        attributes::{impl_custom_attributes_fn, impl_with_custom_attributes},
         docs_macro::impl_docs_fn,
         generics::impl_generic_fn,
         type_struct::impl_type_fn,
-    }, 
+    },
+    ops::Enum,
 };
+use alloc::{boxed::Box, format, string::String};
+use vct_os::sync::Arc;
+use vct_utils::collections::HashMap;
 
-
+/// Container for storing compile-time enum information
 #[derive(Clone, Debug)]
 pub struct EnumInfo {
     ty: Type,
@@ -38,7 +32,7 @@ impl EnumInfo {
     impl_custom_attributes_fn!(custom_attributes);
     impl_with_custom_attributes!(custom_attributes);
 
-    /// 创建新容器
+    /// Create new container
     pub fn new<TEnum: TypePath + Enum>(variants: &[VariantInfo]) -> Self {
         let variant_indices = variants
             .iter()
@@ -60,13 +54,13 @@ impl EnumInfo {
         }
     }
 
-    /// 获取变体名列表
+    /// Get the list of the variant name
     #[inline]
     pub fn variant_names(&self) -> &[&'static str] {
         &self.variant_names
     }
 
-    /// 根据变体名获取变体信息
+    /// Get spacific VariantInfo
     #[inline]
     pub fn variant(&self, name: &str) -> Option<&VariantInfo> {
         self.variant_indices
@@ -74,37 +68,37 @@ impl EnumInfo {
             .map(|index| &self.variants[*index])
     }
 
-    /// 根据索引获取变体信息
+    /// Get spacific VariantInfo
     #[inline]
     pub fn variant_at(&self, index: usize) -> Option<&VariantInfo> {
         self.variants.get(index)
     }
 
-    /// 获取变体的索引
+    /// Get the index of the variant name
     #[inline]
     pub fn index_of(&self, name: &str) -> Option<usize> {
         self.variant_indices.get(name).copied()
     }
 
-    /// 返回变体的完整路径表示
+    /// Get the full type path of the variant name
     #[inline]
     pub fn variant_path(&self, name: &str) -> String {
         format!("{}::{name}", self.type_path())
     }
 
-    /// 检查给定名称的变体是否存在
+    /// Check if a variant of the given name exists
     #[inline]
     pub fn contains_variant(&self, name: &str) -> bool {
         self.variant_indices.contains_key(name)
     }
 
-    /// 获取变体的迭代器
+    /// Get the iter of inner VariantInfo
     #[inline]
     pub fn iter(&self) -> core::slice::Iter<'_, VariantInfo> {
         self.variants.iter()
     }
 
-    /// 获取变体的数量
+    /// Get the number of inner varient
     #[inline]
     pub fn variant_len(&self) -> usize {
         self.variants.len()

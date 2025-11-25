@@ -1,15 +1,14 @@
-use core::fmt::Display;
-use alloc::borrow::Cow;
-use vct_os::sync::Arc;
 use crate::info::{
-    CustomAttributes, MaybeTyped,
-    Type, TypeInfo, TypePath, 
+    CustomAttributes, MaybeTyped, Type, TypeInfo, TypePath,
     attributes::{impl_custom_attributes_fn, impl_with_custom_attributes},
     docs_macro::impl_docs_fn,
     type_struct::impl_type_fn,
 };
+use alloc::borrow::Cow;
+use core::fmt;
+use vct_os::sync::Arc;
 
-/// 命名字段，如结构体的字段
+/// named field(struct field)
 #[derive(Clone, Debug)]
 pub struct NamedField {
     ty: Type,
@@ -26,7 +25,7 @@ impl NamedField {
     impl_custom_attributes_fn!(custom_attributes);
     impl_with_custom_attributes!(custom_attributes);
 
-    /// 创建新对象
+    /// Create a new container
     #[inline]
     pub fn new<T: MaybeTyped + TypePath>(name: &'static str) -> Self {
         Self {
@@ -39,20 +38,20 @@ impl NamedField {
         }
     }
 
-    /// 获取字段名
+    /// Get field name
     #[inline]
     pub fn name(&self) -> &'static str {
         self.name
     }
 
-    /// 获取类型信息
+    /// Get field type info
     #[inline]
     pub fn type_info(&self) -> Option<&'static TypeInfo> {
         (self.type_info)()
     }
 }
 
-/// 无名字段，如元组结构体
+/// unnamed field(tuple field)
 #[derive(Clone, Debug)]
 pub struct UnnamedField {
     ty: Type,
@@ -69,7 +68,7 @@ impl UnnamedField {
     impl_custom_attributes_fn!(custom_attributes);
     impl_with_custom_attributes!(custom_attributes);
 
-    /// 创建新对象
+    /// Create a new container
     #[inline]
     pub fn new<T: MaybeTyped + TypePath>(index: usize) -> Self {
         Self {
@@ -82,31 +81,32 @@ impl UnnamedField {
         }
     }
 
-    /// 获取字段名
+    /// Get field index
     #[inline]
     pub fn index(&self) -> usize {
         self.index
     }
 
-    /// 获取类型信息
+    /// Get field type info
     #[inline]
     pub fn type_info(&self) -> Option<&'static TypeInfo> {
         (self.type_info)()
     }
 }
 
-/// 一个用于表示字段名的容器
+/// A container for representing field names
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum FieldId {
     Named(Cow<'static, str>),
     Unnamed(usize),
 }
 
-impl Display for FieldId {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+impl fmt::Display for FieldId {
+    #[inline]
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Named(name) => Display::fmt(name, f),
-            Self::Unnamed(name) => Display::fmt(name, f),
+            Self::Named(name) => fmt::Display::fmt(name, f),
+            Self::Unnamed(name) => fmt::Display::fmt(name, f),
         }
     }
 }

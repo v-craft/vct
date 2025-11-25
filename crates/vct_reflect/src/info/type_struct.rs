@@ -4,11 +4,11 @@ use core::{
     hash::Hash,
 };
 
-use crate::info::{
-    TypePath, TypePathTable
-};
+use crate::info::{TypePath, TypePathTable};
 
-/// 一个用于表示 Rust 类型的结构体
+/// The base representation of a Rust type.
+///
+/// Including [`TypeId`] and [`TypePathTable`] .
 #[derive(Copy, Clone)]
 pub struct Type {
     type_path_table: TypePathTable,
@@ -16,7 +16,7 @@ pub struct Type {
 }
 
 impl Type {
-    /// 基于指定实现了 [`TypePath`] 的类型创建新对象
+    /// Create a new [`Type`] from a type that implements [`TypePath`].
     #[inline]
     pub fn of<T: TypePath + ?Sized>() -> Self {
         Self {
@@ -25,56 +25,59 @@ impl Type {
         }
     }
 
-    /// 返回类型的 [`TypeId`]
+    /// Returns the [`TypeId`] of the type.
     #[inline(always)]
     pub fn id(&self) -> TypeId {
         self.type_id
     }
 
-    /// 参考 [`TypePath::type_path`]
+    /// See [`TypePath::type_path`]
     #[inline]
     pub fn path(&self) -> &'static str {
         self.type_path_table.path()
     }
 
-    /// 参考 [`TypePath::short_type_path`]
+    /// See [`TypePath::short_type_path`]
     #[inline]
     pub fn short_path(&self) -> &'static str {
         self.type_path_table.short_path()
     }
 
-    /// 参考 [`TypePath::type_ident`]
+    /// See [`TypePath::type_ident`]
     #[inline]
     pub fn ident(&self) -> Option<&'static str> {
         self.type_path_table.ident()
     }
 
-    /// 参考 [`TypePath::crate_name`]
+    /// See [`TypePath::crate_name`]
     #[inline]
     pub fn crate_name(&self) -> Option<&'static str> {
         self.type_path_table.crate_name()
     }
 
-    /// 参考 [`TypePath::module_path`]
+    /// See [`TypePath::module_path`]
     #[inline]
     pub fn module_path(&self) -> Option<&'static str> {
         self.type_path_table.module_path()
     }
 
-    /// 返回 [`TypePathTable`] 
+    /// See [`TypePathTable`]
     #[inline]
     pub fn type_path_table(&self) -> &TypePathTable {
         &self.type_path_table
     }
 
-    /// 检查类型是否匹配，仅比较 [`TypeId`]
+    /// Check if the given type matches this one.
+    ///
+    /// This only compares the [`TypeId`] of the types.
     #[inline]
     pub fn is<T: Any>(&self) -> bool {
         TypeId::of::<T>() == self.type_id
     }
 }
 
-/// 此实现基于 [`TypeId`]
+/// This implementation purely relies on the [`TypeId`] of the type,
+/// and not on the [`TypePath`].
 impl PartialEq for Type {
     #[inline]
     fn eq(&self, other: &Self) -> bool {
@@ -84,7 +87,8 @@ impl PartialEq for Type {
 
 impl Eq for Type {}
 
-/// 此实现基于 [`TypeId`]
+/// This implementation purely relies on the [`TypeId`] of the type,
+/// and not on the [`TypePath`].
 impl Hash for Type {
     #[inline]
     fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
@@ -92,44 +96,47 @@ impl Hash for Type {
     }
 }
 
-/// 此实现基于 [`TypePathTable::path()`]
+/// This implementation will only output the [`TypePath`] of the type.
 impl Debug for Type {
+    #[inline]
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         write!(f, "{}", self.type_path_table.path())
     }
 }
 
-// 用在类型的 impl 块中，要求类型的某个字段是 `Type`
+/// impl `ty` `type_id` `type_path` `type_path_table` `is`
 macro_rules! impl_type_fn {
     ($field:ident) => {
         $crate::info::type_struct::impl_type_fn!(self => &self.$field);
     };
     ($self:ident => $expr:expr) => {
-        /// 获取底层类型的 [`Type`] 表示, expr 尽量简单
+        /// Get underlying [`Type`].
         #[inline]
         pub fn ty($self: &Self) -> &$crate::info::Type {
             $expr
         }
 
-        /// 获取 [`TypeId`]
+        /// Get [`TypeId`]
         #[inline]
         pub fn type_id(&self) -> ::core::any::TypeId {
             self.ty().id()
         }
 
-        /// 获取类型路径
+        /// Get type_path
         #[inline]
         pub fn type_path(&self) -> &'static str {
             self.ty().path()
         }
 
-        /// 获取 [`TypePathTable`]
+        /// Get [`TypePathTable`]
         #[inline]
         pub fn type_path_table(&self) -> &$crate::info::TypePathTable {
             &self.ty().type_path_table()
         }
 
-        /// 检查类型是否相同
+        /// Check if the given type matches this one.
+        ///
+        /// This only compares the [`TypeId`] of the types.
         #[inline]
         pub fn is<T: ::core::any::Any>(&self) -> bool {
             self.ty().is::<T>()
@@ -138,4 +145,3 @@ macro_rules! impl_type_fn {
 }
 
 pub(crate) use impl_type_fn;
-

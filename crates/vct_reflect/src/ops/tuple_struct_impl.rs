@@ -1,17 +1,10 @@
+use alloc::{boxed::Box, vec::Vec};
 use core::fmt;
-use alloc::{
-    vec::Vec, boxed::Box,
-};
 
 use crate::{
     PartialReflect, Reflect,
-    ops::{
-        ReflectRef, ReflectMut, ReflectOwned, ApplyError,
-        DynamicTuple, Tuple,
-    },
-    info::{
-        MaybeTyped, ReflectKind, TupleStructInfo, TypeInfo, TypePath
-    },
+    info::{MaybeTyped, ReflectKind, TupleStructInfo, TypeInfo, TypePath},
+    ops::{ApplyError, DynamicTuple, ReflectMut, ReflectOwned, ReflectRef, Tuple},
 };
 
 impl From<DynamicTuple> for DynamicTupleStruct {
@@ -23,6 +16,7 @@ impl From<DynamicTuple> for DynamicTupleStruct {
     }
 }
 
+/// A tuple struct which allows fields to be added at runtime.
 #[derive(Default)]
 pub struct DynamicTupleStruct {
     target_type: Option<&'static TypeInfo>,
@@ -30,25 +24,38 @@ pub struct DynamicTupleStruct {
 }
 
 impl TypePath for DynamicTupleStruct {
+    #[inline]
     fn type_path() -> &'static str {
         "vct_reflect::ops::DynamicTupleStruct"
     }
 
+    #[inline]
     fn short_type_path() -> &'static str {
         "DynamicTupleStruct"
     }
+
+    #[inline]
     fn type_ident() -> Option<&'static str> {
         Some("DynamicTupleStruct")
     }
+
+    #[inline]
     fn crate_name() -> Option<&'static str> {
         Some("vct_reflect")
     }
+
+    #[inline]
     fn module_path() -> Option<&'static str> {
         Some("vct_reflect::ops")
     }
 }
 
 impl DynamicTupleStruct {
+    /// Sets the [`TypeInfo`] to be represented by this `DynamicTupleStruct`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the given [`TypeInfo`] is not a [`TypeInfo::TupleStruct`].
     pub fn set_target_type_info(&mut self, target_type: Option<&'static TypeInfo>) {
         if let Some(target_type) = target_type {
             assert!(
@@ -59,11 +66,13 @@ impl DynamicTupleStruct {
         self.target_type = target_type;
     }
 
+    /// Appends an element with value `value` to the tuple struct.
     #[inline]
     pub fn insert_boxed(&mut self, value: Box<dyn PartialReflect>) {
         self.fields.push(value);
     }
 
+    /// Appends a typed element with value `value` to the tuple struct.
     #[inline]
     pub fn insert<T: PartialReflect>(&mut self, value: T) {
         self.fields.push(Box::new(value));
@@ -138,27 +147,8 @@ impl PartialReflect for DynamicTupleStruct {
     }
 
     fn reflect_partial_eq(&self, other: &dyn PartialReflect) -> Option<bool> {
-        // 手动内联
-        let ReflectRef::TupleStruct(other) = other.reflect_ref() else {
-            return Some(false);
-        };
-
-        if self.field_len() != other.field_len() {
-            return Some(false);
-        }
-
-        for (idx, other_field) in other.iter_fields().enumerate() {
-            if let Some(self_field) = self.field(idx) {
-                let result = self_field.reflect_partial_eq(other_field);
-                if result != Some(true) {
-                    return result;
-                }
-            } else {
-                return Some(false);
-            }
-        }
-
-        Some(true)
+        // Not Inline: `tuple_struct_partial_eq()` is inline always
+        tuple_struct_partial_eq(self, other)
     }
 
     #[inline]
@@ -187,7 +177,7 @@ impl FromIterator<Box<dyn PartialReflect>> for DynamicTupleStruct {
     fn from_iter<T: IntoIterator<Item = Box<dyn PartialReflect>>>(iter: T) -> Self {
         Self {
             target_type: None,
-            fields: iter.into_iter().collect()
+            fields: iter.into_iter().collect(),
         }
     }
 }
@@ -195,8 +185,7 @@ impl FromIterator<Box<dyn PartialReflect>> for DynamicTupleStruct {
 impl IntoIterator for DynamicTupleStruct {
     type Item = Box<dyn PartialReflect>;
     type IntoIter = alloc::vec::IntoIter<Self::Item>;
-    
-    #[inline]
+
     fn into_iter(self) -> Self::IntoIter {
         self.fields.into_iter()
     }
@@ -205,29 +194,48 @@ impl IntoIterator for DynamicTupleStruct {
 impl<'a> IntoIterator for &'a DynamicTupleStruct {
     type Item = &'a dyn PartialReflect;
     type IntoIter = TupleStructFieldIter<'a>;
-    
+
     #[inline]
     fn into_iter(self) -> Self::IntoIter {
         self.iter_fields()
     }
 }
 
+/// A trait used to power [tuple struct-like] operations via [reflection].
+///
+/// This trait uses the [`Reflect`] trait to allow implementors to have their fields
+/// be dynamically addressed by index.
 pub trait TupleStruct: PartialReflect {
+    /// Returns a reference to the value of the field with index `index` as a
+    /// `&dyn Reflect`.
     fn field(&self, index: usize) -> Option<&dyn PartialReflect>;
+
+    /// Returns a mutable reference to the value of the field with index `index`
+    /// as a `&mut dyn Reflect`.
     fn field_mut(&mut self, index: usize) -> Option<&mut dyn PartialReflect>;
+
+    /// Returns the number of fields in the tuple struct.
     fn field_len(&self) -> usize;
+
+    /// Returns an iterator over the values of the tuple struct's fields.
     fn iter_fields(&self) -> TupleStructFieldIter<'_>;
+
+    /// Creates a new [`DynamicTupleStruct`] from this tuple struct.
     fn to_dynamic_tuple_struct(&self) -> DynamicTupleStruct {
         DynamicTupleStruct {
             target_type: self.get_target_type_info(),
             fields: self.iter_fields().map(PartialReflect::to_dynamic).collect(),
         }
     }
+
+    /// Will return `None` if [`TypeInfo`] is not available.
+    #[inline]
     fn get_target_tuple_struct_info(&self) -> Option<&'static TupleStructInfo> {
         self.get_target_type_info()?.as_tuple_struct().ok()
     }
 }
 
+/// An iterator over the field values of a tuple struct.
 pub struct TupleStructFieldIter<'a> {
     tuple_struct: &'a dyn TupleStruct,
     index: usize,
@@ -284,8 +292,14 @@ impl TupleStruct for DynamicTupleStruct {
     }
 }
 
+/// A convenience trait which combines fetching and downcasting of tuple struct fields.
 pub trait GetTupleStructField {
+    /// Returns a reference to the value of the field with index `index`,
+    /// downcast to `T`.
     fn get_field<T: Reflect>(&self, index: usize) -> Option<&T>;
+
+    /// Returns a mutable reference to the value of the field with index
+    /// `index`, downcast to `T`.
     fn get_field_mut<T: Reflect>(&mut self, index: usize) -> Option<&mut T>;
 }
 
@@ -315,10 +329,17 @@ impl GetTupleStructField for dyn TupleStruct {
     }
 }
 
+/// A function used to assist in the implementation of `reflect_partial_eq`
+///
+/// It's `inline(always)`, Usually recommended only for impl `reflect_partial_eq`.
+#[inline(always)]
 pub fn tuple_struct_partial_eq<S: TupleStruct + ?Sized>(
     x: &S,
     y: &dyn PartialReflect,
 ) -> Option<bool> {
+    // Inline: this function **should only** be used to impl `PartialReflect::reflect_partial_eq`
+    // Compilation times is related to the quantity of type A.
+    // Therefore, inline has no negative effects.
     let ReflectRef::TupleStruct(y) = y.reflect_ref() else {
         return Some(false);
     };
@@ -341,10 +362,13 @@ pub fn tuple_struct_partial_eq<S: TupleStruct + ?Sized>(
     Some(true)
 }
 
+/// The default debug formatter for [`Tuple`] types.
 pub fn tuple_struct_debug(
     dyn_tuple_struct: &dyn TupleStruct,
     f: &mut fmt::Formatter<'_>,
 ) -> fmt::Result {
+    // This function should only be used to impl `PartialReflect::debug`
+    // Non Inline: only be compiled once -> reduce compilation times
     let mut debug = f.debug_tuple(
         dyn_tuple_struct
             .get_target_type_info()

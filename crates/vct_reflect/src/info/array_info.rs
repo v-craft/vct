@@ -1,13 +1,13 @@
 use crate::{
-    Reflect, 
+    Reflect,
     info::{
-        Generics, MaybeTyped, Type, TypeInfo, TypePath, 
-        docs_macro::impl_docs_fn, generics::impl_generic_fn, type_struct::impl_type_fn
-    }, 
-    ops::Array
+        Generics, MaybeTyped, Type, TypeInfo, TypePath, docs_macro::impl_docs_fn,
+        generics::impl_generic_fn, type_struct::impl_type_fn,
+    },
+    ops::Array,
 };
 
-/// 存储编译时数组信息的容器
+/// Container for storing compile-time array information
 #[derive(Clone, Debug)]
 pub struct ArrayInfo {
     ty: Type,
@@ -24,12 +24,11 @@ impl ArrayInfo {
     impl_type_fn!(ty);
     impl_generic_fn!(generics);
 
-    /// 创建新容器
+    /// create a new container
     #[inline]
-    pub fn new<
-        TArray: TypePath + Array,
-        TItem: MaybeTyped + TypePath + Reflect,
-    >(capacity: usize) -> Self {
+    pub fn new<TArray: TypePath + Array, TItem: MaybeTyped + TypePath + Reflect>(
+        capacity: usize,
+    ) -> Self {
         Self {
             ty: Type::of::<TArray>(),
             generics: Generics::new(),
@@ -41,20 +40,19 @@ impl ArrayInfo {
         }
     }
 
-
-    /// 获取数组容量（固定）
+    /// Get array capacity (fixed)
     #[inline]
     pub fn capacity(&self) -> usize {
         self.capacity
     }
 
-    /// 获取列表项的类型信息
+    /// Get the `TypeInfo` of array items
     #[inline]
     pub fn item_info(&self) -> Option<&'static TypeInfo> {
         (self.item_info)()
     }
 
-    /// 获取列表自身的类型
+    /// Get the `Type` of array item
     #[inline]
     pub fn item_ty(&self) -> Type {
         self.item_ty

@@ -1,49 +1,49 @@
-use core::{fmt, error};
-use alloc::boxed::Box;
-use vct_os::sync::Arc;
-use vct_utils::collections::HashMap;
 use crate::info::{
-    CustomAttributes, NamedField, UnnamedField, 
+    CustomAttributes, NamedField, UnnamedField,
     attributes::{impl_custom_attributes_fn, impl_with_custom_attributes},
     docs_macro::impl_docs_fn,
 };
+use alloc::boxed::Box;
+use core::{error, fmt};
+use vct_os::sync::Arc;
+use vct_utils::collections::HashMap;
 
-/// 用于表示变体类型的枚举
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
-pub enum VariantType {
-    /// 结构体
+/// Describes the form of an enum variant.
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+pub enum VariantKind {
+    /// # Example
     ///
     /// ```ignore
     /// enum MyEnum {
-    ///   A {
+    ///   A {   // <--
     ///     foo: usize
     ///   }
     /// }
     /// ```
     Struct,
-    /// 枚举
+    /// # Example
     ///
     /// ```ignore
     /// enum MyEnum {
-    ///   A(usize)
+    ///   A(usize) // <--
     /// }
     /// ```
     Tuple,
-    /// 单元
+    /// # Example
     ///
     /// ```ignore
     /// enum MyEnum {
-    ///   A
+    ///   A // <--
     /// }
     /// ```
     Unit,
 }
 
-/// 存储枚举中的结构体项信息的容器
-/// 
+/// Type info for struct variants.
+///
 /// ```ignore
 /// enum MyEnum {
-///   A {
+///   A {  // <--
 ///     foo: usize
 ///   }
 /// }
@@ -64,7 +64,7 @@ impl StructVariantInfo {
     impl_custom_attributes_fn!(custom_attributes);
     impl_with_custom_attributes!(custom_attributes);
 
-    /// 创建新容器
+    /// Create a new [`StructVariantInfo`].
     pub fn new(name: &'static str, fields: &[NamedField]) -> Self {
         let field_indices = fields
             .iter()
@@ -85,19 +85,19 @@ impl StructVariantInfo {
         }
     }
 
-    /// 获取自身的变体名
+    /// The name of this variant.
     #[inline]
     pub fn name(&self) -> &'static str {
         self.name
     }
 
-    /// 获取字段名列表
+    /// A slice containing the names of all fields in order.
     #[inline]
     pub fn field_names(&self) -> &[&'static str] {
         &self.field_names
     }
 
-    /// 根据字段名获取字段信息
+    /// Get the field with the given name.
     #[inline]
     pub fn field(&self, name: &str) -> Option<&NamedField> {
         self.field_indices
@@ -105,37 +105,36 @@ impl StructVariantInfo {
             .map(|index| &self.fields[*index])
     }
 
-    /// 根据索引（序号）查询字段详情
+    /// Get the field at the given index.
     #[inline]
     pub fn field_at(&self, index: usize) -> Option<&NamedField> {
         self.fields.get(index)
     }
 
-    /// 查询字段的索引（序号）
+    /// Get the index of the field with the given name.
     #[inline]
     pub fn index_of(&self, name: &str) -> Option<usize> {
         self.field_indices.get(name).copied()
     }
 
-    /// 获取字段的迭代器
+    /// Iterate over the fields of this variant.
     #[inline]
     pub fn iter(&self) -> core::slice::Iter<'_, NamedField> {
         self.fields.iter()
     }
 
-    /// 获取字段总数
+    /// The total number of fields in this variant.
     #[inline]
     pub fn field_len(&self) -> usize {
         self.fields.len()
     }
 }
 
-
-/// 存储枚举中的元组项信息的容器
-/// 
+/// Type info for tuple variants.
+///
 /// ```ignore
 /// enum MyEnum {
-///   B(usize)
+///   A(usize) // <--
 /// }
 /// ```
 #[derive(Clone, Debug)]
@@ -152,9 +151,9 @@ impl TupleVariantInfo {
     impl_custom_attributes_fn!(custom_attributes);
     impl_with_custom_attributes!(custom_attributes);
 
-    /// 创建新对象
-    #[inline]
+    /// Create a new [`TupleVariantInfo`].
     pub fn new(name: &'static str, fields: &[UnnamedField]) -> Self {
+        // Not inline: Consistent with StructVariantInfo
         Self {
             name,
             fields: fields.to_vec().into_boxed_slice(),
@@ -164,36 +163,36 @@ impl TupleVariantInfo {
         }
     }
 
-    /// 获取自身的变体名
+    /// The name of this variant.
     #[inline]
     pub fn name(&self) -> &'static str {
         self.name
     }
 
-    /// 根据索引获取字段详情
+    /// Get the field at the given index.
     #[inline]
     pub fn field_at(&self, index: usize) -> Option<&UnnamedField> {
         self.fields.get(index)
     }
 
-    /// 获取字段的迭代器
+    /// Iterate over the fields of this variant.
     #[inline]
     pub fn iter(&self) -> core::slice::Iter<'_, UnnamedField> {
         self.fields.iter()
     }
 
-    /// 获取字段总数
+    /// The total number of fields in this variant.
     #[inline]
     pub fn field_len(&self) -> usize {
         self.fields.len()
     }
 }
 
-/// 存储枚举中单元项信息的容器
-/// 
+/// Type info for unit variants.
+///
 /// ```ignore
 /// enum MyEnum {
-///   C
+///   A // <--
 /// }
 /// ```
 #[derive(Clone, Debug)]
@@ -209,7 +208,7 @@ impl UnitVariantInfo {
     impl_custom_attributes_fn!(custom_attributes);
     impl_with_custom_attributes!(custom_attributes);
 
-    /// 创建新容器
+    /// Create a new [`UnitVariantInfo`].
     #[inline]
     pub fn new(name: &'static str) -> Self {
         Self {
@@ -220,53 +219,54 @@ impl UnitVariantInfo {
         }
     }
 
-    /// 获取自身的变体名
+    /// The name of this variant.
     #[inline]
     pub fn name(&self) -> &'static str {
         self.name
     }
 }
 
-/// 用于表示类型错误的枚举
+/// A [`VariantInfo`]-specific error.
 #[derive(Debug)]
-pub struct VariantTypeError {
-    /// 预期类型
-    expected: VariantType,
-    /// 实际类型
-    received: VariantType,
+pub struct VariantKindError {
+    /// Expected variant type.
+    expected: VariantKind,
+    /// Received variant type.
+    received: VariantKind,
 }
 
-impl fmt::Display for VariantTypeError {
+impl fmt::Display for VariantKindError {
+    #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "variant type mismatch: expected {:?}, received {:?}", self.expected, self.received)
+        write!(
+            f,
+            "variant type mismatch: expected {:?}, received {:?}",
+            self.expected, self.received
+        )
     }
 }
 
-impl error::Error for VariantTypeError {}
+impl error::Error for VariantKindError {}
 
-
-/// 存储编译时枚举变体项信息的容器
+/// Container for compile-time enum variant info.
 #[derive(Clone, Debug)]
 pub enum VariantInfo {
-    /// 参考 [`StructVariantInfo`]
+    /// See [`StructVariantInfo`]
     Struct(StructVariantInfo),
-
-    /// 参考 [`TupleVariantInfo`]
+    /// See [`TupleVariantInfo`]
     Tuple(TupleVariantInfo),
-
-    /// 参考 [`UnitVariantInfo`]
+    /// See [`UnitVariantInfo`]
     Unit(UnitVariantInfo),
 }
 
 macro_rules! impl_cast_fn {
     ($name:ident : $kind:ident => $info:ident) => {
-        /// 类型转换
         #[inline]
-        pub fn $name(&self) -> Result<&$info, VariantTypeError> {
+        pub fn $name(&self) -> Result<&$info, VariantKindError> {
             match self {
                 Self::$kind(info) => Ok(info),
-                _ => Err(VariantTypeError {
-                    expected: VariantType::$kind,
+                _ => Err(VariantKindError {
+                    expected: VariantKind::$kind,
                     received: self.variant_type(),
                 }),
             }
@@ -285,7 +285,7 @@ impl VariantInfo {
         Self::Unit(info) => info.custom_attributes(),
     });
 
-    /// 获取变体名
+    /// The name of the enum variant.
     #[inline]
     pub fn name(&self) -> &'static str {
         match self {
@@ -295,17 +295,19 @@ impl VariantInfo {
         }
     }
 
-    /// 获取变体类型
+    /// Returns the [kind] of this variant.
+    ///
+    /// [kind]: VariantKind
     #[inline]
-    pub fn variant_type(&self) -> VariantType {
+    pub fn variant_type(&self) -> VariantKind {
         match self {
-            Self::Struct(_) => VariantType::Struct,
-            Self::Tuple(_) => VariantType::Tuple,
-            Self::Unit(_) => VariantType::Unit,
+            Self::Struct(_) => VariantKind::Struct,
+            Self::Tuple(_) => VariantKind::Tuple,
+            Self::Unit(_) => VariantKind::Unit,
         }
     }
 
-    /// 读取文档
+    /// The docstring of the underlying variant, if any.
     #[cfg(feature = "reflect_docs")]
     #[inline]
     pub fn docs(&self) -> Option<&str> {
@@ -316,4 +318,3 @@ impl VariantInfo {
         }
     }
 }
-

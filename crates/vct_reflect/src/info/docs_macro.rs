@@ -1,14 +1,14 @@
-
+/// impl `docs` and `with_docs` fn
 macro_rules! impl_docs_fn {
     ($field:ident) => {
-        /// 读取文档
+        /// Get docs
         #[cfg(feature = "reflect_docs")]
         #[inline]
         pub fn docs(&self) -> Option<&'static str> {
             self.$field
         }
 
-        /// 修改文档（覆盖，而非添加）
+        /// Modify docs (overwrite, not add)
         #[cfg(feature = "reflect_docs")]
         #[inline]
         pub fn with_docs(self, $field: Option<&'static str>) -> Self {

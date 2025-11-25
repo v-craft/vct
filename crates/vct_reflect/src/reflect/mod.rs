@@ -1,6 +1,7 @@
 use core::hash::BuildHasher;
-use vct_utils::hash::{FixedHash, DefaultHasher};
+use vct_utils::hash::{DefaultHasher, FixedHash};
 
+/// Get Fixed Hasher
 #[inline(always)]
 pub fn reflect_hasher() -> DefaultHasher<'static> {
     FixedHash.build_hasher()

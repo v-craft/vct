@@ -1,9 +1,13 @@
-use crate::{Reflect, info::{
-    Generics, MaybeTyped, Type, TypeInfo, TypePath, docs_macro::impl_docs_fn, generics::impl_generic_fn, type_struct::impl_type_fn
-}, ops::List};
+use crate::{
+    Reflect,
+    info::{
+        Generics, MaybeTyped, Type, TypeInfo, TypePath, docs_macro::impl_docs_fn,
+        generics::impl_generic_fn, type_struct::impl_type_fn,
+    },
+    ops::List,
+};
 
-
-/// 存储编译时列表信息的容器
+/// Container for storing compile-time list-like information
 #[derive(Clone, Debug)]
 pub struct ListInfo {
     ty: Type,
@@ -19,12 +23,9 @@ impl ListInfo {
     impl_type_fn!(ty);
     impl_generic_fn!(generics);
 
-    /// 创建新容器
+    /// Create a new container
     #[inline]
-    pub fn new<
-        TList: TypePath + List,
-        TItem: MaybeTyped + TypePath + Reflect,
-    >() -> Self {
+    pub fn new<TList: TypePath + List, TItem: MaybeTyped + TypePath + Reflect>() -> Self {
         Self {
             ty: Type::of::<TList>(),
             generics: Generics::new(),
@@ -35,13 +36,13 @@ impl ListInfo {
         }
     }
 
-    /// 获取列表项的类型信息
+    /// Get the [`TypeInfo`] of list items
     #[inline]
     pub fn item_info(&self) -> Option<&'static TypeInfo> {
         (self.item_info)()
     }
 
-    /// 获取列表自身的类型
+    /// Get the [`Type`] of list items
     #[inline]
     pub fn item_ty(&self) -> Type {
         self.item_ty
