@@ -1,3 +1,7 @@
+//! Provides replacements for `std::hash` items using [`foldhash`].
+//!
+//! Also provides some additional items beyond the standard library.
+
 use core::{
     fmt::Debug,
     hash::{BuildHasher, Hash, Hasher},
@@ -7,10 +11,10 @@ use core::{
 
 pub use foldhash::fast::{FixedState, FoldHasher as DefaultHasher, RandomState};
 
-/// 一个随机生成的固定哈希种子
+/// A fixed hash seed(randomly generated)
 const FIXED_HASH: FixedState = FixedState::with_seed(0x95EE04C40326B271);
 
-/// 固定哈希生成器
+/// Deterministic hasher based upon a random but fixed state.
 #[derive(Copy, Clone, Default, Debug)]
 pub struct FixedHash;
 
@@ -23,7 +27,11 @@ impl BuildHasher for FixedHash {
     }
 }
 
-/// 用于存储已生成哈希值的对象
+/// A pre-hashed value of a specific type.
+/// Pre-hashing enables memoization of hashes that are expensive to compute.
+///
+/// It also enables faster [`PartialEq`] comparisons by short circuiting on hash equality.
+/// See `PreHashMap` for a hashmap pre-configured to use [`Hashed`] keys.
 pub struct Hashed<V, S = FixedHash> {
     hash: u64,
     value: V,
@@ -31,7 +39,8 @@ pub struct Hashed<V, S = FixedHash> {
 }
 
 impl<V: Hash, H: BuildHasher + Default> Hashed<V, H> {
-    /// 预计算哈希值
+    /// Pre-hashes the given value using the [`BuildHasher`] configured in the [`Hashed`] type.
+    #[inline]
     pub fn new(value: V) -> Self {
         Self {
             hash: H::default().hash_one(&value),
@@ -40,7 +49,7 @@ impl<V: Hash, H: BuildHasher + Default> Hashed<V, H> {
         }
     }
 
-    /// 获取预计算的指针
+    /// The pre-computed hash.
     #[inline]
     pub fn hash(&self) -> u64 {
         self.hash
@@ -72,6 +81,7 @@ impl<V: PartialEq, H> PartialEq for Hashed<V, H> {
 
 impl<V: Debug, H> Debug for Hashed<V, H> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        // Not inline: Debug allows for slight performance loss
         f.debug_struct("Hashed")
             .field("hash", &self.hash)
             .field("value", &self.value)
@@ -94,7 +104,8 @@ impl<V: Copy, H> Copy for Hashed<V, H> {}
 
 impl<V: Eq, H> Eq for Hashed<V, H> {}
 
-/// 一个不带操作的 Hasher 实现，仅使用 write_u64
+/// A no-op hash that only works on `u64`s.
+/// 
 #[derive(Debug, Default)]
 pub struct NoOpHasher {
     hash: u64,
@@ -106,12 +117,9 @@ impl Hasher for NoOpHasher {
         self.hash
     }
 
-    fn write(&mut self, bytes: &[u8]) {
-        // 通常不建议使用此 write ，自定义场景请直接调用 write_64
-        // 已确定 TypeId 会调用 write_u64 而非此函数
-        self.hash = bytes.iter().fold(self.hash, |hash, b| {
-            hash.rotate_left(8).wrapping_add(*b as u64)
-        });
+    fn write(&mut self, _bytes: &[u8]) {
+        // TypeId will call `write_u64` instead of this function
+        panic!("NoOpHasher::write() should not be called; use write_u64 instead");
     }
 
     #[inline]
@@ -126,7 +134,93 @@ pub struct NoOpHash;
 impl BuildHasher for NoOpHash {
     type Hasher = NoOpHasher;
 
+    #[inline]
     fn build_hasher(&self) -> Self::Hasher {
-        NoOpHasher::default()
+        // manually inline
+        NoOpHasher{ hash: 0 }
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use core::any::TypeId;
+    use alloc::{format, string::String};
+
+    #[test]
+    fn typeid_hash_call() {
+        // Ensure that the hash of `TypeId` will call `write_u64` instead of `write`
+        struct  MyHasher(u64);
+
+        impl Hasher for MyHasher {
+            fn finish(&self) -> u64 {
+                0
+            }
+            fn write(&mut self, _: &[u8]) {
+                panic!("Hashing of core::any::TypeId changed");
+            }
+            fn write_u64(&mut self, _: u64) {
+                self.0 += 1;
+            }
+        }
+
+        let mut hasher = MyHasher(0);
+
+        Hash::hash(&TypeId::of::<()>(), &mut hasher);
+        assert_eq!(hasher.0, 1u64);
+    }
+
+    #[test]
+    fn no_op_hash() {
+        let mut h0 = NoOpHasher::default();
+        let h1 = NoOpHash::build_hasher(&NoOpHash);
+        let h2 = NoOpHasher{ hash: 0 };
+        assert_eq!(h0.hash, h1.hash);
+        assert_eq!(h1.hash, h2.hash);
+
+        37u64.hash(&mut h0);
+        assert_eq!(h0.hash, 37u64);
+        12u64.hash(&mut h0);
+        assert_eq!(h0.hash, 12u64);
+    }
+
+    #[test]
+    fn hashed() {
+        // test: hash()
+        let h = Hashed::<u64, NoOpHash> {
+            hash: 0xDEADBEEFu64,
+            value: 0u64,
+            marker: PhantomData,
+        };
+        let mut hasher = NoOpHasher::default();
+        Hash::hash(&h, &mut hasher);
+        assert_eq!(hasher.finish(), 0xDEADBEEF);
+        assert_eq!(h.hash(), 0xDEADBEEF);
+
+        // test: new deref fmt
+        let value = String::from("hello");
+        let h1 = Hashed::<String>::new(value.clone());
+        let h2 = h1.clone();
+        // clone preserves hash and value
+        assert_eq!(h1.hash(), h2.hash());
+        assert_eq!(&*h1, &value);
+        // Debug contains the type name "Hashed"
+        assert!(format!("{:?}", h1).contains("Hashed"));
+
+        // test: copy eq
+        let a = Hashed {
+            hash: 1u64,
+            value: 10u32,
+            marker: PhantomData::<FixedHash>,
+        };
+        let b = Hashed {
+            hash: 1u64,
+            value: 20u32,
+            marker: PhantomData::<FixedHash>,
+        };
+        let a2 = a;
+        assert_ne!(a, b);
+        assert_eq!(a, a2);
+    }
+
 }

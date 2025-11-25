@@ -1,4 +1,6 @@
-//! 提供 [`std::sync::Exclusive`] 和 [`std::cell::SyncUnsafeCell`] 的平替
+//! Provides cell primitives.
+//!
+//! This is a drop-in replacement for `std::cell::SyncCell`/`std::cell::SyncUnsafeCell`.
 
 mod sync_cell;
 mod sync_unsafe_cell;

@@ -19,7 +19,6 @@ pub mod sync;
 pub mod thread;
 pub mod time;
 
-/// 重导出 web 相关库
 #[doc(hidden)]
 pub mod exports {
     crate::cfg::web! {

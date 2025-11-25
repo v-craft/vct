@@ -1,12 +1,12 @@
-//! 提供常用的容器，不含 `Vec` 和 `String`
+//! Provide commonly used containers, excluding `Vec` and `String` (please use alloc directly).
 //!
-//! # 基于 [`hashbrown`] 库的哈希容器
+//! # based on [`hashbrown`]
 //!
 //! - [`HashMap`]
 //! - [`HashSet`]
 //! - [`HashTable`]
 //!
-//! # alloc 中的容器
+//! # in alloc
 //!
 //! - [`BTreeMap`]
 //! - [`BTreeSet`]

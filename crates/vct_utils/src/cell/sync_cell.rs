@@ -1,14 +1,15 @@
 #![expect(unsafe_code, reason = "SyncCell requires unsafe code.")]
 
-//! 不稳定 API [`std::sync::Exclusive`] 的一种实现
+//! A reimplementation of the currently unstable [`std::sync::Exclusive`]
 //!
 //! [`std::sync::Exclusive`]: https://doc.rust-lang.org/nightly/std/sync/struct.Exclusive.html
 
 use core::ptr;
 
-/// 参考 [`Exclusive`](https://doc.rust-lang.org/nightly/std/sync/struct.Exclusive.html)
+/// See [`Exclusive`](https://github.com/rust-lang/rust/issues/98407) for stdlib's upcoming implementation,
+/// which should replace this one entirely.
 ///
-/// # 例
+/// # Example
 ///
 /// ```
 /// # use core::cell::Cell;
@@ -21,7 +22,7 @@ use core::ptr;
 ///
 /// assert_sync(State {
 ///     future: SyncCell::new(async {
-///         // 包含 Cell，但 SyncCell 依然是 sync 的
+///         // including Cell, but SyncCell is `sync`
 ///         let cell = Cell::new(1);
 ///         let cell_ref = &cell;
 ///         let val = cell_ref.get();
@@ -33,20 +34,20 @@ pub struct SyncCell<T: ?Sized> {
     inner: T,
 }
 
-/// `Sync` 运行多线程访问不可变引用
-///
-/// 对应 `Sync` 的 T 类型，提供 `as_ref` 函数获取不可变引用。
-/// 队伍 `!Sync` 的 T 类型，禁止 `as_ref` 函数，从而在自身 `Sync` 的同时保证安全性。
+// SAFETY: `Sync` only allows multithreaded access via immutable reference.
+// 
+// As `SyncCell` requires an exclusive reference to access the wrapped value for `!Sync` types,
+// marking this type as `Sync` does not actually allow unsynchronized access to the inner value.
 unsafe impl<T: ?Sized> Sync for SyncCell<T> {}
 
 impl<T: Sized> SyncCell<T> {
-    /// 从给定值构建新的 `SyncCell` 实例
+    /// Create a new instance of a `SyncCell` from the given value.
     #[inline]
     pub const fn new(inner: T) -> Self {
         Self { inner }
     }
 
-    /// 析构自身，并移动出内部值
+    /// Deconstruct this `SyncCell` into its inner value.
     #[inline]
     pub fn into_inner(self) -> T {
         self.inner
@@ -54,15 +55,13 @@ impl<T: Sized> SyncCell<T> {
 }
 
 impl<T: ?Sized> SyncCell<T> {
-    /// 获取可变引用
-    ///
-    /// 使用时需遵守别名规则
+    /// Get a mut reference to this `SyncCell`'s inner value.
     #[inline]
     pub const fn get_mut(&mut self) -> &mut T {
         &mut self.inner
     }
 
-    /// 只有内部 T 是 Sync 时才提供此函数，保证安全性
+    /// For types that implement [`Sync`], get shared access to this `SyncCell`'s inner value.
     #[inline]
     pub const fn as_ref(&self) -> &T
     where
@@ -71,10 +70,13 @@ impl<T: ?Sized> SyncCell<T> {
         &self.inner
     }
 
-    /// 从可变引用获取 `SyncCell` 的可变引用
+    /// Build a mutable reference to a `SyncCell` from a mutable reference
+    /// to its inner value, to skip constructing with [`new()`](SyncCell::new()).
     #[inline]
     pub const fn from_mut(r: &mut T) -> &mut SyncCell<T> {
         let ptr = ptr::from_mut(r) as *mut SyncCell<T>;
+        // SAFETY: repr is transparent, so refs have the same layout; 
+        // and `SyncCell` properties are `&mut`-agnostic
         unsafe { &mut *ptr }
     }
 }

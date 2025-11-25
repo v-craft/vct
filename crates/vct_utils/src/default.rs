@@ -1,7 +1,9 @@
 use core::default::Default;
 
-/// 此函数用于简化 `default()` 的使用
+/// An ergonomic abbreviation for [`Default::default()`] to make initializing structs easier.
 ///
+/// # Example
+/// 
 /// ```
 /// use vct_utils::default;
 ///
@@ -12,7 +14,7 @@ use core::default::Default;
 ///   c: usize,
 /// }
 ///
-/// // 以前需要调用 `Default::default()` 或 `Foo::default()`
+/// // Normally
 /// let foo = Foo {
 ///   a: 10,
 ///   ..Default::default()
@@ -22,7 +24,7 @@ use core::default::Default;
 /// #   ..Foo::default()
 /// # };
 ///
-/// // 现在可以简化
+/// // New
 /// let foo = Foo {
 ///   a: 10,
 ///   ..default()

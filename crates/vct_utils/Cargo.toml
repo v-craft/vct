@@ -23,12 +23,12 @@ rayon = ["dep:rayon", "hashbrown/rayon"]
 
 vct_cfg = { path = "../vct_cfg", default-features = false, version = "0.1.0" }
 
-disqualified = { version = "1.0" }
+# Parallel
 thread_local = { version = "1.0", optional = true }
 
-# 哈希容器相关库
+# Hash Container
 foldhash = { version = "0.2.0", default-features = false }
-hashbrown = { version = "0.16.0", features = [
+hashbrown = { version = "0.16.1", features = [
   "equivalent",
   "raw-entry",
 ], default-features = false }

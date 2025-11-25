@@ -4,7 +4,6 @@ version = "0.1.0"
 edition = "2024"
 
 [features]
-# 目前要求必须启用 std
 default = ["std"]
 
 std = [

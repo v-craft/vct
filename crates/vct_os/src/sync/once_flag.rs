@@ -1,8 +1,8 @@
 use crate::sync::atomic;
 
-/// 一个 [`AtomicBool`] 的封装，一次性的标志位
+/// Wrapper around an [`AtomicBool`]
 ///
-/// # 例
+/// # Example
 ///
 /// ```
 /// # use vct_os::sync::OnceFlag;
@@ -27,27 +27,30 @@ use crate::sync::atomic;
 pub struct OnceFlag(atomic::AtomicBool);
 
 impl OnceFlag {
-    /// 创建新对象，初始是 `true`
+    /// Create new object, default inner value is `true`.
+    #[inline]
     pub const fn new() -> Self {
         Self(atomic::AtomicBool::new(true))
     }
 
-    /// 将自身置为 false，并返回旧值
+    /// Set inner value to `false` and return old value.
+    #[inline]
     pub fn set(&self) -> bool {
         self.0.swap(false, atomic::Ordering::Relaxed)
     }
 }
 
 impl Default for OnceFlag {
-    /// 默认值调用 new，初始为 true
+    /// Call `new`, default inner value is `true`.
+    #[inline]
     fn default() -> Self {
         Self::new()
     }
 }
 
-/// 一个简化宏，用于保证代码只会调用一次
+/// Call some expression only once per call site.
 ///
-/// # 例
+/// # Example
 ///
 /// ```
 /// # use vct_os::sync::once;
@@ -55,12 +58,14 @@ impl Default for OnceFlag {
 /// let mut count = 0;
 ///
 /// for _ in 0..5 {
-///     // 注意内部传入 “表达式” 而非 “语句”
+///     // use `expression` instead of `statement`
 ///     once!( count += 1 );
 /// }
 ///
 /// assert_eq!(count, 1);
 /// ```
+///
+/// Impl through [`OnceFlag`] instead of [`Once`].
 #[macro_export]
 macro_rules! once {
     ($expression:expr) => {{

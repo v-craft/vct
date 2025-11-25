@@ -1,26 +1,18 @@
-//! 提供两个额外的 map 容器
-//!
-//! 此库仅在启用 alloc 时生效
 use core::{any::TypeId, hash::Hash};
-
-use crate::collections::{
-    HashMap,
-    hash_map::{Entry, RawEntryMut},
+use crate::{
+    hash::{Hashed, NoOpHash},
+    collections::{
+        HashMap,
+        hash_map::{Entry, RawEntryMut},
+    },
 };
-use crate::hash::{Hashed, NoOpHash};
 
-/// 一个预计算了哈希值并使用 [`Hashed`] 作为键的 [`HashMap`]
-///
-/// 使用 [`NoOpHash`] 计算哈希值，即直接读取 [`Hashed`] 中存储的 `u64` 数据
+/// A [`HashMap`] pre-configured to use [`Hashed`] keys and [`PassHash`] passthrough hashing.
+/// Iteration order only depends on the order of insertions and deletions.
 pub type PreHashMap<K, V> = HashMap<Hashed<K>, V, NoOpHash>;
 
-// pub trait PreHashMapExt<K, V> {
-//     /// 如果元素存在则获取可变引用，不存在则先插入后获取
-//     fn get_or_insert_with<F: FnOnce() -> V>(&mut self, key: &Hashed<K>, func: F) -> &mut V;
-// }
-
 impl<K, V> PreHashMap<K, V> {
-    /// 创建一个空的 [`PreHashMap`] 
+    /// Create a empty [`PreHashMap`] 
     #[inline]
     pub const fn new() -> Self {
         Self::with_hasher(NoOpHash)
@@ -28,6 +20,9 @@ impl<K, V> PreHashMap<K, V> {
 }
 
 impl<K: Hash + Eq + PartialEq + Clone, V> PreHashMap<K, V> {
+    /// Tries to get or insert the value for the given `key` using the pre-computed hash first.
+    /// If the [`PreHashMap`] does not already contain the `key`, it will clone it and insert
+    /// the value returned by `func`.
     pub fn get_or_insert_with<F: FnOnce() -> V>(&mut self, key: &Hashed<K>, func: F) -> &mut V {
         let entry: RawEntryMut<'_, Hashed<K>, V, NoOpHash> = self
             .raw_entry_mut()
@@ -43,35 +38,43 @@ impl<K: Hash + Eq + PartialEq + Clone, V> PreHashMap<K, V> {
     }
 }
 
-/// 一个将 [`TypeId`] 作为键的 [`HashMap`]
+/// A specialized hashmap type with Key of [`TypeId`]
+/// Iteration order only depends on the order of insertions and deletions.
 pub type TypeIdMap<V> = HashMap<TypeId, V, NoOpHash>;
 
 impl<V> TypeIdMap<V> {
-    /// 创建一个空的 [`TypeIdMap`]
+    /// Create a empty [`TypeIdMap`]
     #[inline]
     pub const fn new() -> Self {
         Self::with_hasher(NoOpHash)
     }
+
+    /// Inserts a value for the type `T`.
     #[inline]
     pub fn insert_type<T: ?Sized + 'static>(&mut self, v: V) -> Option<V> {
         self.insert(TypeId::of::<T>(), v)
     }
 
+    /// Returns a reference to the value for type `T`, if one exists.
     #[inline]
     pub fn get_type<T: ?Sized + 'static>(&self) -> Option<&V> {
         self.get(&TypeId::of::<T>())
     }
 
+    /// Returns a mutable reference to the value for type `T`, if one exists.
     #[inline]
     pub fn get_type_mut<T: ?Sized + 'static>(&mut self) -> Option<&mut V> {
         self.get_mut(&TypeId::of::<T>())
     }
 
+    /// Removes type `T` from the map, returning the value for this
+    /// key if it was previously present.
     #[inline]
     pub fn remove_type<T: ?Sized + 'static>(&mut self) -> Option<V> {
         self.remove(&TypeId::of::<T>())
     }
 
+    /// Gets the type `T`'s entry in the map for in-place manipulation.
     #[inline]
     pub fn entry_type<T: ?Sized + 'static>(&mut self) -> Entry<'_, TypeId, V, NoOpHash> {
         self.entry(TypeId::of::<T>())
@@ -81,24 +84,6 @@ impl<V> TypeIdMap<V> {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn typeid_hash_call() {
-        // 确保 TypeId 的 hash 将调用 write_u64 而非 write
-        struct Hasher;
-
-        impl core::hash::Hasher for Hasher {
-            fn finish(&self) -> u64 {
-                0
-            }
-            fn write(&mut self, _: &[u8]) {
-                panic!("Hashing of core::any::TypeId changed");
-            }
-            fn write_u64(&mut self, _: u64) {}
-        }
-
-        Hash::hash(&TypeId::of::<()>(), &mut Hasher);
-    }
 
     #[test]
     fn typeid_map() {

@@ -1,22 +1,29 @@
 # V-Craft Cross-Platform Support
 
-> 参考 [bevy_platform](https://github.com/bevyengine/bevy/blob/main/crates/bevy_platform/README.md)。
+> Reference: [bevy_platform](https://github.com/bevyengine/bevy/blob/main/crates/bevy_platform/README.md).
 
-Rust 标准库提供了三个层级：
+Rust’s standard library is organized into three layers:
 
-- core: 基础的语言核心功能。
-- alloc: \(额外包含\)内存分配相关功能与 `String` 等常用容器。
-- std: \(额外包含\)文件、线程等操作系统 API。
+- core: the language core functionality.
+- alloc: adds allocation-related APIs and common containers such as `String`.
+- std: adds OS APIs (files, threads, etc.).
 
-理想状态下，游戏引擎面向的所有平台都支持 `core` ，兼容 `alloc` （可能需要提供内存分配器）。
+Ideally, engine code should target platforms that support `core` and be compatible with `alloc` (which may require providing an allocator).
+`std` exposes operating-system interfaces, so each platform must provide its own implementation.
 
-`std` 包含操作系统接口，意味着每种平台都需要给出一套实现。
-Rust 官方进行了大量工作以扩充多平台支持，但无法完全覆盖主机与嵌入式端。
+Rust provides extensive cross-platform work, but it cannot cover every host and embedded target.
 
-> [Rust Platform Support](https://doc.rust-lang.org/nightly/rustc/platform-support.html)
+> See: [Rust Platform Support](https://doc.rust-lang.org/nightly/rustc/platform-support.html)
 
-常见的解决方案是提供一个抽象层，包含所需的操作系统接口，并为各平台提供特定的实现。
+A common solution is to define a thin abstraction layer for the OS functionality you need and supply platform-specific implementations.
+This is a large engineering effort. This crate defines the basic abstraction layer but currently only provides an implementation based on `std`.
 
-这是一个庞大的工程，本库虽然定义了基础抽象层，却只能提供基于 `std` 的实现。
+Good news: the `std`-based implementation covers major platforms (Windows, Linux, Android) and is sufficient for the demo projects in this repository.
 
-好消息是这足以支持 Win、Linux、Android 等多数平台的工作，已经能够满足 `demo` 项目的需求。
+If you need to add support for a specific platform, implement the following:
+
+1. Add a new feature to `Cargo.toml` that names the platform.
+2. In `lib.rs`, use the `define_alias!` macro to generate compile-time helper macros for that platform name.
+3. Provide platform-specific implementations for modules such as sync and thread. 
+Put each platform implementation in a separate file 
+(do not put the platform-specific code directly in `mod.rs`).

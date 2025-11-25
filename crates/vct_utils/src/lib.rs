@@ -8,7 +8,10 @@ pub mod cfg {
     pub use vct_cfg::std;
 
     vct_cfg::define_alias! {
-        #[cfg(feature = "parallel")] => parallel
+        #[cfg(feature = "parallel")] => parallel,
+        #[cfg(feature = "debug")] => debug,
+        #[cfg(feature = "serde")] => serde,
+        #[cfg(feature = "rayon")] => rayon,
     }
 }
 
@@ -17,15 +20,15 @@ cfg::std! {
 }
 
 cfg::parallel! {
-    // parallel 特性包含 std
+    // `parallel` includes `std`
     mod parallel_queue;
     pub use parallel_queue::*;
 }
 
-pub mod collections;
-pub mod debug;
-pub mod hash;
+pub mod name;
 pub mod cell;
+pub mod hash;
+pub mod collections;
 
 mod default;
 mod on_drop;

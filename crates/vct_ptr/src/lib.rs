@@ -1378,7 +1378,7 @@ mod tests {
     use core::cell::Cell;
 
     #[test]
-    fn test_const_non_null() {
+    fn const_non_null() {
         // Ignore the content tested in the document.
         let x = 7u8;
         let y = 31;
@@ -1394,14 +1394,14 @@ mod tests {
     }
 
     #[test]
-    fn test_debug_ensure_aligned() {
+    fn debug_ensure_aligned() {
         let mut x = 44;
         let p = &raw mut x;
         assert_eq!(p.debug_ensure_aligned(), &raw mut x);
     }
 
     #[test]
-    fn test_ptr() {
+    fn ptr() {
         // test: new  deref
         let x = 7u8;
         let px = unsafe { Ptr::<'_, Aligned>::new(NonNull::from(&x).cast()) };
@@ -1439,7 +1439,7 @@ mod tests {
     }
 
     #[test]
-    fn test_ptr_mut() {
+    fn ptr_mut() {
         // test: new  deref_mut
         let mut x = 7u8;
         let px = unsafe { PtrMut::<'_, Aligned>::new(NonNull::from(&mut x).cast()) };
@@ -1478,7 +1478,7 @@ mod tests {
     }
 
     #[test]
-    fn test_owning_ptr() {
+    fn owning_ptr() {
         // test: new  read
         let mut x = 7u8;
         let px = unsafe { OwningPtr::<'_, Aligned>::new(NonNull::from(&mut x).cast()) };
@@ -1509,7 +1509,7 @@ mod tests {
     }
 
     #[test]
-    fn test_moving_ptr() {
+    fn moving_ptr() {
         // read from value
         let mut v1 = MaybeUninit::new(10u32);
         let mp1 = unsafe { MovingPtr::from_value(&mut v1) };
@@ -1557,7 +1557,7 @@ mod tests {
     }
 
     #[test]
-    fn test_thin_slice_ptr() {
+    fn thin_slice_ptr() {
         let mut arr = [0; 5];
         let mut counter = 0;
         for it in &mut arr {
@@ -1582,7 +1582,7 @@ mod tests {
     }
 
     #[test]
-    fn test_unsafe_cell_deref() {
+    fn unsafe_cell_deref() {
         let t = UnsafeCell::new(123);
         // test: deref_mut
         let mut_ref = unsafe { t.deref_mut() };

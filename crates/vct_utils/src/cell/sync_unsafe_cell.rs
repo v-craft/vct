@@ -1,22 +1,36 @@
 #![expect(unsafe_code, reason = "SyncUnsafeCell requires unsafe code.")]
 
-//! 不稳定 API [`std::sync::SyncUnsafeCell`] 的一种实现
+//! A reimplementation of the currently unstable [`std::cell::SyncUnsafeCell`]
 //!
-//! [`std::sync::SyncUnsafeCell`]: https://doc.rust-lang.org/nightly/std/cell/struct.SyncUnsafeCell.html
-
+//! [`std::cell::SyncUnsafeCell`]: https://doc.rust-lang.org/nightly/std/cell/struct.SyncUnsafeCell.html
 use core::cell::UnsafeCell;
 use core::ptr;
 
-/// 参考 [`SyncUnsafeCell`](https://doc.rust-lang.org/nightly/std/cell/struct.SyncUnsafeCell.html)
+/// [`UnsafeCell`], but [`Sync`].
+///
+/// See [tracking issue](https://github.com/rust-lang/rust/issues/95439) for upcoming native impl,
+/// which should replace this one entirely (except `from_mut`).
+///
+/// This is just an `UnsafeCell`, except it implements `Sync`
+/// if `T` implements `Sync`.
+///
+/// `UnsafeCell` doesn't implement `Sync`, to prevent accidental misuse.
+/// You can use `SyncUnsafeCell` instead of `UnsafeCell` to allow it to be
+/// shared between threads, if that's intentional.
+/// Providing proper synchronization is still the task of the user,
+/// making this type just as unsafe to use.
+///
+/// See [`UnsafeCell`] for details.
 #[repr(transparent)]
 pub struct SyncUnsafeCell<T: ?Sized> {
     value: UnsafeCell<T>,
 }
 
+// SAFETY: `T` is Sync, caller is responsible for upholding rust safety rules
 unsafe impl<T: ?Sized + Sync> Sync for SyncUnsafeCell<T> {}
 
 impl<T> SyncUnsafeCell<T> {
-    /// 从给定值构建新的 `SyncUnsafeCell` 实例
+    /// Constructs a new instance of `SyncUnsafeCell` which will wrap the specified value.
     #[inline]
     pub const fn new(value: T) -> Self {
         Self {
@@ -24,7 +38,7 @@ impl<T> SyncUnsafeCell<T> {
         }
     }
 
-    /// 析构自身，并移动出内部值
+    /// Unwraps the value.
     #[inline]
     pub fn into_inner(self) -> T {
         self.value.into_inner()
@@ -32,40 +46,50 @@ impl<T> SyncUnsafeCell<T> {
 }
 
 impl<T: ?Sized> SyncUnsafeCell<T> {
-    /// 获取可变指针
+    /// Gets a mutable pointer to the wrapped value.
     ///
-    /// 使用时需遵守别名规则
+    /// This can be cast to a pointer of any kind.
+    /// Ensure that the access is unique (no active references, mutable or not)
+    /// when casting to `&mut T`, and ensure that there are no mutations
+    /// or mutable aliases going on when casting to `&T`
     #[inline]
     pub const fn get(&self) -> *mut T {
         self.value.get()
     }
 
-    /// 获取可变引用
+    /// Returns a mutable reference to the underlying data.
     ///
-    /// 使用时需遵守别名规则
+    /// This call borrows the `SyncUnsafeCell` mutably (at compile-time) which
+    /// guarantees that we possess the only reference.
     #[inline]
     pub const fn get_mut(&mut self) -> &mut T {
         self.value.get_mut()
     }
 
-    /// 获取内部数据类型的指针
+    /// Gets a mutable pointer to the wrapped value.
+    ///
+    /// See [`UnsafeCell::get`] for details.
     #[inline]
     pub const fn raw_get(this: *const Self) -> *mut T {
+        // #[repr(transparent)] support
         (this as *const T).cast_mut()
     }
 
-    /// 从可变引用获取 `SyncUnsafeCell` 的可变引用
+    /// Returns a `&mut SyncUnsafeCell<T>` from a `&mut T`.
     #[inline]
     pub const fn from_mut(t: &mut T) -> &mut SyncUnsafeCell<T> {
         let ptr = ptr::from_mut(t) as *mut SyncUnsafeCell<T>;
+        // SAFETY: `ptr` must be safe to mutably dereference, since it was originally
+        // obtained from a mutable reference. `SyncUnsafeCell` has the same representation
+        // as the original type `T`, since the former is annotated with #[repr(transparent)].
         unsafe { &mut *ptr }
     }
 }
 
 impl<T> SyncUnsafeCell<[T]> {
-    /// 从 `&SyncUnsafeCell<[T]>` 返回 `&[SyncUnsafeCell<T>]`
-    ///
-    /// # 例
+    /// Returns a `&[SyncUnsafeCell<T>]` from a `&SyncUnsafeCell<[T]>`.
+    /// 
+    /// # Examples
     ///
     /// ```
     /// # use vct_utils::cell::SyncUnsafeCell;
@@ -79,18 +103,25 @@ impl<T> SyncUnsafeCell<[T]> {
     pub fn as_slice_of_cells(&self) -> &[SyncUnsafeCell<T>] {
         let self_ptr: *const SyncUnsafeCell<[T]> = ptr::from_ref(self);
         let slice_ptr = self_ptr as *const [SyncUnsafeCell<T>];
+        // SAFETY: `UnsafeCell<T>` and `SyncUnsafeCell<T>` have #[repr(transparent)]
+        // therefore:
+        // - `SyncUnsafeCell<T>` has the same layout as `T`
+        // - `SyncUnsafeCell<[T]>` has the same layout as `[T]`
+        // - `SyncUnsafeCell<[T]>` has the same layout as `[SyncUnsafeCell<T>]`
         unsafe { &*slice_ptr }
     }
 }
 
 impl<T: Default> Default for SyncUnsafeCell<T> {
-    /// 以内部元素的默认值构成
+    /// Creates a new `SyncUnsafeCell` with the `Default` value for T.
+    #[inline]
     fn default() -> SyncUnsafeCell<T> {
         SyncUnsafeCell::new(Default::default())
     }
 }
 
 impl<T> From<T> for SyncUnsafeCell<T> {
+    #[inline]
     fn from(t: T) -> SyncUnsafeCell<T> {
         SyncUnsafeCell::new(t)
     }

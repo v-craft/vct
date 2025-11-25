@@ -1,6 +1,8 @@
-//! 基于 [hashbrown] 的实现，提供新的 [`HashSet`]。
-//! 此 [`HashSet`] 默认使用 [`FixedHash`] 而不是 [`RandomState`](crate::hash::RandomState)。
-
+//! Provides [`HashSet`] based on [hashbrown]'s implementation.
+//! Unlike [`hashbrown::HashSet`], [`HashSet`] defaults to [`FixedHasher`]
+//! instead of [`RandomState`](crate::hash::RandomState).
+//! This provides determinism by default with an acceptable compromise to denial
+//! of service resistance in the context of a game engine.
 use core::{
     fmt::Debug,
     hash::{BuildHasher, Hash},
@@ -10,23 +12,30 @@ use core::{
     },
 };
 
-// 固定的哈希生成器
+// Fixed Hasher builder
 use crate::hash::FixedHash;
 
 use hashbrown::{Equivalent, hash_set as hb};
 
-// 重导出 API
+// re-export
 pub use hb::{
     Difference, Drain, ExtractIf, Intersection, IntoIter, Iter, OccupiedEntry, SymmetricDifference,
     Union, VacantEntry,
 };
 
-/// 一个默认使用 `FixedHash` 的简化别名
+/// Shortcut for [`Entry`](hb::Entry) with [`FixedHasher`] as the default hashing provider.
 pub type Entry<'a, T, S = FixedHash> = hb::Entry<'a, T, S>;
 
-/// 一个基于 [`hb::HashSet`] 的 new-type，默认使用 [`FixedHash`] 作为哈希构造器
+/// New-type for [`HashSet`](hb::HashSet) with [`FixedHasher`] as the default hashing provider.
+/// Can be trivially converted to and from a [hashbrown] [`HashSet`](hb::HashSet) using [`From`].
 ///
-/// 大部分方法都直接调用底层 `hb::HashSet` 的操作，额外添加少量方法以简化操作
+/// A new-type is used instead of a type alias due to critical methods like [`new`](hb::HashSet::new)
+/// being incompatible with Bevy's choice of default hasher.
+///
+/// Unlike [`hashbrown::HashSet`], [`HashSet`] defaults to [`FixedHasher`]
+/// instead of [`RandomState`](crate::hash::RandomState).
+/// This provides determinism by default with an acceptable compromise to denial
+/// of service resistance in the context of a game engine.
 #[repr(transparent)]
 pub struct HashSet<T, S = FixedHash>(hb::HashSet<T, S>);
 
@@ -40,9 +49,9 @@ where
 }
 
 impl<T> HashSet<T, FixedHash> {
-    /// 创建一个空的 [`HashSet`]
+    /// Create a empty [`HashSet`]
     ///
-    /// # 例
+    /// # Example
     ///
     /// ```rust
     /// # use vct_utils::collections::HashSet;
@@ -58,9 +67,9 @@ impl<T> HashSet<T, FixedHash> {
         Self::with_hasher(FixedHash)
     }
 
-    /// 创建一个空的 [`HashSet`] 并指定容量
+    /// Create a empty [`HashSet`] with specific capacity
     ///
-    /// # 例
+    /// # Example
     ///
     /// ```rust
     /// # use vct_utils::collections::HashSet;
@@ -78,7 +87,7 @@ impl<T> HashSet<T, FixedHash> {
 }
 
 // --------------------------------------------------
-// ↓ 复写一遍底层方法
+// ↓ Re-export the underlying method
 
 impl<T, S> Clone for HashSet<T, S>
 where
@@ -312,9 +321,9 @@ where
 }
 
 impl<T, S> HashSet<T, S> {
-    /// 返回容器的容量
+    /// Returns the number of elements the set can hold without reallocating.
     ///
-    /// # 例
+    /// # Example
     ///
     /// ```rust
     /// # use vct_utils::collections::HashSet;
@@ -329,9 +338,10 @@ impl<T, S> HashSet<T, S> {
         self.0.capacity()
     }
 
-    /// 返回 `&'a T` 的迭代器
+    /// An iterator visiting all elements in arbitrary order.
+    /// The iterator element type is `&'a T`
     ///
-    /// # 例
+    /// # Example
     ///
     /// ```rust
     /// # use vct_utils::collections::HashSet;
@@ -343,7 +353,7 @@ impl<T, S> HashSet<T, S> {
     /// map.insert("baz");
     ///
     /// for value in map.iter() {
-    ///     // "foo", "bar", "baz" （顺序不确定）
+    ///     // "foo", "bar", "baz" (arbitrary order)
     /// }
     /// #
     /// # assert_eq!(map.iter().count(), 3);
@@ -353,9 +363,9 @@ impl<T, S> HashSet<T, S> {
         self.0.iter()
     }
 
-    /// 获取内部元素的数量
+    /// Returns the number of elements in the set.
     ///
-    /// # 例
+    /// # Example
     ///
     /// ```rust
     /// # use vct_utils::collections::HashSet;
@@ -372,9 +382,9 @@ impl<T, S> HashSet<T, S> {
         self.0.len()
     }
 
-    /// 如果内部没有元素，返回 `true`
+    /// Returns true if the set contains no elements.
     ///
-    /// # 例
+    /// # Example
     ///
     /// ```rust
     /// # use vct_utils::collections::HashSet;
@@ -391,9 +401,9 @@ impl<T, S> HashSet<T, S> {
         self.0.is_empty()
     }
 
-    /// 清理容器并返回内部元素的迭代器，不改变容量
+    /// Clears the set, returning all elements in an iterator.
     ///
-    /// # 例
+    /// # Example
     ///
     /// ```rust
     /// # use vct_utils::collections::HashSet;
@@ -406,7 +416,7 @@ impl<T, S> HashSet<T, S> {
     ///
     /// for value in map.drain() {
     ///     // "foo", "bar", "baz"
-    ///     // Note that the above order is not guaranteed
+    ///     // arbitrary order
     /// }
     ///
     /// assert!(map.is_empty());
@@ -416,9 +426,9 @@ impl<T, S> HashSet<T, S> {
         self.0.drain()
     }
 
-    /// 仅保留符合条件的元素，不改变容量
+    /// Retains only the elements specified by the predicate.
     ///
-    /// # 例
+    /// # Example
     ///
     /// ```rust
     /// # use vct_utils::collections::HashSet;
@@ -441,9 +451,10 @@ impl<T, S> HashSet<T, S> {
         self.0.retain(f);
     }
 
-    /// 移除符合条件的元素并返回迭代器，不改变容量
+    /// Drains elements which are true under the given predicate,
+    /// and returns an iterator over the removed items.
     ///
-    /// # 例
+    /// # Example
     ///
     /// ```rust
     /// # use vct_utils::collections::HashSet;
@@ -469,9 +480,9 @@ impl<T, S> HashSet<T, S> {
         self.0.extract_if(f)
     }
 
-    /// 清理容器
+    /// Clears the set, removing all values.
     ///
-    /// # 例
+    /// # Example
     ///
     /// ```rust
     /// # use vct_utils::collections::HashSet;
@@ -491,9 +502,9 @@ impl<T, S> HashSet<T, S> {
         self.0.clear();
     }
 
-    /// 创建新容器并使用指定的哈希构造器
+    /// Creates a new empty hash set which will use the given hasher to hash keys.
     ///
-    /// # 例
+    /// # Example
     ///
     /// ```rust
     /// # use vct_utils::collections::HashSet;
@@ -510,9 +521,9 @@ impl<T, S> HashSet<T, S> {
         Self(hb::HashSet::with_hasher(hasher))
     }
 
-    /// 创建新容器并指定初始容量和哈希构造器
+    /// Creates an empty HashSet with the specified capacity, using hasher to hash the keys.
     ///
-    /// # 例
+    /// # Example
     ///
     /// ```rust
     /// # use vct_utils::collections::HashSet;
@@ -529,15 +540,15 @@ impl<T, S> HashSet<T, S> {
         Self(hb::HashSet::with_capacity_and_hasher(capacity, hasher))
     }
 
-    /// 返回内部 [`BuildHasher`] 的引用
+    /// Returns a reference to the set's  [`BuildHasher`] .
     #[inline]
     pub fn hasher(&self) -> &S {
         self.0.hasher()
     }
 
-    /// 获取内部的 [`hb::HashSet`]
+    /// Return inner [`hb::HashSet`]
     ///
-    /// # 例
+    /// # Example
     ///
     /// ```rust
     /// # use vct_utils::collections::HashSet;
@@ -555,9 +566,9 @@ where
     T: Eq + Hash,
     S: BuildHasher,
 {
-    /// 将容量提升至不少于 `additional` 的量，可能会分配更多空间以避免频繁重分配
+    /// Reserves capacity for at least additional more elements to be inserted in the HashSet. 
     ///
-    /// # 例
+    /// # Example
     ///
     /// ```rust
     /// # use vct_utils::collections::HashSet;
@@ -576,9 +587,9 @@ where
         self.0.reserve(additional);
     }
 
-    /// 尝试将容量提升至不少于 `additional` 的量，可能会分配更多空间以避免频繁重分配
+    /// Tries to reserve capacity for at least additional more elements.
     ///
-    /// # 例
+    /// # Example
     ///
     /// ```rust
     /// # use vct_utils::collections::HashSet;
@@ -597,9 +608,9 @@ where
         self.0.try_reserve(additional)
     }
 
-    /// 尽可能削减容量到内部元素数，可能会预留部分空间
+    /// Shrinks the capacity of the set as much as possible.
     ///
-    /// # 例
+    /// # Example
     ///
     /// ```rust
     /// # use vct_utils::collections::HashSet;
@@ -620,39 +631,39 @@ where
         self.0.shrink_to_fit();
     }
 
-    /// 削减容量到不低于目标的值
+    /// Shrinks the capacity of the set with a lower limit.
     #[inline]
     pub fn shrink_to(&mut self, min_capacity: usize) {
         self.0.shrink_to(min_capacity);
     }
 
-    /// 获取差集
+    /// Visits the values representing the difference
     #[inline]
     pub fn difference<'a>(&'a self, other: &'a Self) -> Difference<'a, T, S> {
         self.0.difference(other)
     }
 
-    /// 获取对称差集
+    /// Visits the values representing the symmetric difference
     #[inline]
     pub fn symmetric_difference<'a>(&'a self, other: &'a Self) -> SymmetricDifference<'a, T, S> {
         self.0.symmetric_difference(other)
     }
 
-    /// 获取交集
+    /// Visits the values representing the intersection
     #[inline]
     pub fn intersection<'a>(&'a self, other: &'a Self) -> Intersection<'a, T, S> {
         self.0.intersection(other)
     }
 
-    /// 获取并集
+    /// Visits the values representing the union
     #[inline]
     pub fn union<'a>(&'a self, other: &'a Self) -> Union<'a, T, S> {
         self.0.union(other)
     }
 
-    /// 如果指定元素存在，则返回 `true`
+    /// Returns true if the set contains a value.
     ///
-    /// # 例
+    /// # Example
     ///
     /// ```rust
     /// # use vct_utils::collections::HashSet;
@@ -670,9 +681,9 @@ where
         self.0.contains(value)
     }
 
-    /// 获取指定元素的引用，如果存在
+    /// Returns a reference to the value in the set, if any, that is equal to the given value.
     ///
-    /// # 例
+    /// # Example
     ///
     /// ```rust
     /// # use vct_utils::collections::HashSet;
@@ -690,9 +701,10 @@ where
         self.0.get(value)
     }
 
-    /// 获取指定元素的引用，如果没有则插入
+    /// Inserts the given value into the set if it is not present,
+    /// then returns a reference to the value in the set.
     ///
-    /// # 例
+    /// # Example
     ///
     /// ```rust
     /// # use vct_utils::collections::HashSet;
@@ -705,9 +717,10 @@ where
         self.0.get_or_insert(value)
     }
 
-    /// 获取指定元素的引用，如果没有则插入
+    /// Inserts a value computed from f into the set if the given value is not present,
+    /// then returns a reference to the value in the set.
     ///
-    /// # 例
+    /// # Example
     ///
     /// ```rust
     /// # use vct_utils::collections::HashSet;
@@ -724,9 +737,9 @@ where
         self.0.get_or_insert_with(value, f)
     }
 
-    /// 获取指定元素对应的条目
+    /// Gets the given value's corresponding entry in the set for in-place manipulation.
     ///
-    /// # 例
+    /// # Example
     ///
     /// ```rust
     /// # use vct_utils::collections::HashSet;
@@ -741,27 +754,27 @@ where
         self.0.entry(value)
     }
 
-    /// 如果 `self` 与 `other` 没有共同的元素，则返回`true`
+    /// Returns true if self has no elements in common with other.
     #[inline]
     pub fn is_disjoint(&self, other: &Self) -> bool {
         self.0.is_disjoint(other)
     }
 
-    /// 如果 `self` 是 `other` 的子集，返回 `true`
+    /// Returns true if the set is a subset of another
     #[inline]
     pub fn is_subset(&self, other: &Self) -> bool {
         self.0.is_subset(other)
     }
 
-    /// 如果 `self` 是 `other` 的超集，返回 `true`
+    /// Returns true if the set is a superset of another
     #[inline]
     pub fn is_superset(&self, other: &Self) -> bool {
         self.0.is_superset(other)
     }
 
-    /// 添加元素
+    /// Adds a value to the set.
     ///
-    /// # 例
+    /// # Example
     ///
     /// ```rust
     /// # use vct_utils::collections::HashSet;
@@ -776,9 +789,10 @@ where
         self.0.insert(value)
     }
 
-    /// 添加元素并替换已有的等效值
+    /// Adds a value to the set, replacing the existing value,
+    /// if any, that is equal to the given one. Returns the replaced value.
     ///
-    /// # 例
+    /// # Example
     ///
     /// ```rust
     /// # use vct_utils::collections::HashSet;
@@ -793,9 +807,9 @@ where
         self.0.replace(value)
     }
 
-    /// 移除元素，元素存在则返回 `true`
+    /// Removes a value from the set. Returns whether the value was present in the set.
     ///
-    /// # 例
+    /// # Example
     ///
     /// ```rust
     /// # use vct_utils::collections::HashSet;
@@ -815,9 +829,9 @@ where
         self.0.remove(value)
     }
 
-    /// 取出元素
+    /// Removes and returns the value in the set, if any, that is equal to the given one.
     ///
-    /// # 例
+    /// # Example
     ///
     /// ```rust
     /// # use vct_utils::collections::HashSet;
@@ -837,9 +851,9 @@ where
         self.0.take(value)
     }
 
-    /// 返回容器总分配的内存字节数
+    /// Returns the total amount of memory allocated internally by the hash set, in bytes.
     ///
-    /// # 例
+    /// # Example
     ///
     /// ```rust
     /// # use vct_utils::collections::HashSet;
@@ -856,12 +870,23 @@ where
         self.0.allocation_size()
     }
 
-    /// 插入一个值且不检查是否已存在
+    /// Insert a value the set without checking if the value already exists in the set.
     ///
-    /// # 安全性要求
-    ///
-    /// 值不存在时使用此方法是安全的。
-    /// 值已存在时，是未定义行为。
+    /// # Safety
+    /// This operation is safe if a value does not exist in the set.
+    /// 
+    /// However, if a value exists in the set already, 
+    /// the behavior is unspecified: this operation may panic, loop forever, 
+    /// or any following operation with the set may panic, 
+    /// loop forever or return arbitrary result.
+    /// 
+    /// That said, this operation (and following operations) 
+    /// are guaranteed to not violate memory safety.
+    /// 
+    /// However this operation is still unsafe 
+    /// because the resulting HashSet may be passed to unsafe code 
+    /// which does expect the set to behave correctly, 
+    /// and would cause unsoundness as a result.
     #[expect(
         unsafe_code,
         reason = "re-exporting unsafe method from Hashbrown requires unsafe code"
@@ -879,7 +904,7 @@ where
 {
     type Output = HashSet<T, S>;
 
-    /// 返回并集
+    /// Performs the | operation.
     #[inline]
     fn bitor(self, rhs: &HashSet<T, S>) -> HashSet<T, S> {
         HashSet(self.0.bitor(&rhs.0))
@@ -892,7 +917,7 @@ where
 {
     type Output = HashSet<T, S>;
 
-    /// 返回交集
+    /// Performs the & operation.
     #[inline]
     fn bitand(self, rhs: &HashSet<T, S>) -> HashSet<T, S> {
         HashSet(self.0.bitand(&rhs.0))
@@ -905,7 +930,7 @@ where
 {
     type Output = HashSet<T, S>;
 
-    /// 返回对称差
+    /// Performs the ^ operation.
     #[inline]
     fn bitxor(self, rhs: &HashSet<T, S>) -> HashSet<T, S> {
         HashSet(self.0.bitxor(&rhs.0))
@@ -918,7 +943,7 @@ where
 {
     type Output = HashSet<T, S>;
 
-    /// 返回差集
+    /// Performs the - operation.
     #[inline]
     fn sub(self, rhs: &HashSet<T, S>) -> HashSet<T, S> {
         HashSet(self.0.sub(&rhs.0))
