@@ -1,1 +1,6 @@
+/.vs
+/.vscode
+/.idea
+
 /target
+/cargo.lock
