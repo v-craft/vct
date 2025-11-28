@@ -37,10 +37,10 @@ impl Type {
         self.type_path_table.path()
     }
 
-    /// See [`TypePath::short_name`]
+    /// See [`TypePath::type_name`]
     #[inline]
-    pub fn short_name(&self) -> &'static str {
-        self.type_path_table.short_name()
+    pub fn name(&self) -> &'static str {
+        self.type_path_table.name()
     }
 
     /// See [`TypePath::type_ident`]
@@ -100,7 +100,7 @@ impl Hash for Type {
 impl Debug for Type {
     #[inline]
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
-        write!(f, "{}", self.type_path_table.path())
+        f.write_str(self.type_path_table.path())
     }
 }
 

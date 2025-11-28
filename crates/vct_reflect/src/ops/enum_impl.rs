@@ -37,7 +37,7 @@ impl TypePath for DynamicEnum {
     }
 
     #[inline]
-    fn short_name() -> &'static str {
+    fn type_name() -> &'static str {
         "DynamicEnum"
     }
 

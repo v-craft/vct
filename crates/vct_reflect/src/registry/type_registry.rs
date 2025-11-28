@@ -11,7 +11,7 @@ use vct_utils::collections::{HashMap, HashSet, TypeIdMap, hash_map};
 pub struct TypeRegistry {
     traits_map: TypeIdMap<TypeTraits>,
     type_path_to_id: HashMap<&'static str, TypeId>,
-    short_name_to_id: HashMap<&'static str, TypeId>,
+    type_name_to_id: HashMap<&'static str, TypeId>,
     ambiguous_names: HashSet<&'static str>,
 }
 
@@ -22,7 +22,7 @@ impl TypeRegistry {
         Self {
             traits_map: TypeIdMap::new(),
             type_path_to_id: HashMap::<_, _>::new(),
-            short_name_to_id: HashMap::<_, _>::new(),
+            type_name_to_id: HashMap::<_, _>::new(),
             ambiguous_names: HashSet::new(),
         }
     }
@@ -32,18 +32,18 @@ impl TypeRegistry {
     fn add_new_type_indices(
         type_traits: &TypeTraits,
         type_path_to_id: &mut HashMap<&'static str, TypeId>,
-        short_name_to_id: &mut HashMap<&'static str, TypeId>,
+        type_name_to_id: &mut HashMap<&'static str, TypeId>,
         ambiguous_names: &mut HashSet<&'static str>,
     ) {
-        let short_name = type_traits.type_info().type_path_table().short_name();
+        let type_name = type_traits.type_info().type_path_table().name();
 
         // Check for duplicate names.
         // The type should **not** already exist.
-        if short_name_to_id.contains_key(short_name) || ambiguous_names.contains(short_name) {
-            short_name_to_id.remove(short_name);
-            ambiguous_names.insert(short_name);
+        if type_name_to_id.contains_key(type_name) || ambiguous_names.contains(type_name) {
+            type_name_to_id.remove(type_name);
+            ambiguous_names.insert(type_name);
         } else {
-            short_name_to_id.insert(short_name, type_traits.type_id());
+            type_name_to_id.insert(type_name, type_traits.type_id());
         }
         // For new type, assuming that the full path cannot be duplicated.
         type_path_to_id.insert(type_traits.type_info().type_path(), type_traits.type_id());
@@ -64,7 +64,7 @@ impl TypeRegistry {
                 Self::add_new_type_indices(
                     &type_traits,
                     &mut self.type_path_to_id,
-                    &mut self.short_name_to_id,
+                    &mut self.type_name_to_id,
                     &mut self.ambiguous_names,
                 );
                 entry.insert(type_traits);
@@ -86,9 +86,9 @@ impl TypeRegistry {
     ///
     /// The function will will check if `TypeTraits.type_id()` exists.  
     /// - If key [`TypeId`] has already exist, the value will be overwritten.
-    ///   But full_path and short_name table will not be modified.  
+    ///   But full_path and type_name table will not be modified.  
     /// - If the key [`TypeId`] does not exist, the value will be inserted.
-    ///   And type path will be inserted to full_path and short_name table.
+    ///   And type path will be inserted to full_path and type_name table.
     pub fn insert_type_traits(&mut self, type_traits: TypeTraits) {
         match self.traits_map.entry(type_traits.type_id()) {
             hash_map::Entry::Occupied(mut entry) => {
@@ -99,7 +99,7 @@ impl TypeRegistry {
                 Self::add_new_type_indices(
                     &type_traits,
                     &mut self.type_path_to_id,
-                    &mut self.short_name_to_id,
+                    &mut self.type_name_to_id,
                     &mut self.ambiguous_names,
                 );
                 entry.insert(type_traits);
@@ -187,31 +187,31 @@ impl TypeRegistry {
         }
     }
 
-    /// Returns a reference to the [`TypeTraits`] of the type with the given [short name].
+    /// Returns a reference to the [`TypeTraits`] of the type with the given [type name].
     ///
-    /// [short name]: TypePath::short_name
-    pub fn get_with_short_name(&self, short_name: &str) -> Option<&TypeTraits> {
-        match self.short_name_to_id.get(short_name) {
+    /// [type name]: TypePath::type_name
+    pub fn get_with_type_name(&self, type_name: &str) -> Option<&TypeTraits> {
+        match self.type_name_to_id.get(type_name) {
             Some(id) => self.get(*id),
             None => None,
         }
     }
 
-    /// Returns a mutable reference to the [`TypeTraits`] of the type with the given [short name].
+    /// Returns a mutable reference to the [`TypeTraits`] of the type with the given [type name].
     ///
-    /// [short name]: TypePath::short_name
-    pub fn get_with_short_name_mut(&mut self, short_name: &str) -> Option<&mut TypeTraits> {
-        match self.short_name_to_id.get(short_name) {
+    /// [type name]: TypePath::type_name
+    pub fn get_with_type_name_mut(&mut self, type_name: &str) -> Option<&mut TypeTraits> {
+        match self.type_name_to_id.get(type_name) {
             Some(id) => self.get_mut(*id),
             None => None,
         }
     }
 
-    /// Returns `true` if the given [short name] is ambiguous, that is, it matches multiple registered types.
+    /// Returns `true` if the given [type name] is ambiguous, that is, it matches multiple registered types.
     ///
-    /// [short name]: TypePath::short_name
-    pub fn is_ambiguous(&self, short_name: &str) -> bool {
-        self.ambiguous_names.contains(short_name)
+    /// [type name]: TypePath::type_name
+    pub fn is_ambiguous(&self, type_name: &str) -> bool {
+        self.ambiguous_names.contains(type_name)
     }
 
     /// Returns a reference to the [`TypeTrait`] of type `T` associated with the given [`TypeId`].

@@ -23,7 +23,7 @@ impl TypePath for DynamicStruct {
     }
 
     #[inline]
-    fn short_name() -> &'static str {
+    fn type_name() -> &'static str {
         "DynamicStruct"
     }
 

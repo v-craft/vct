@@ -86,6 +86,7 @@ macro_rules! impl_kind_fn {
 macro_rules! impl_cast_fn {
     ($name:ident : Opaque => $retval:ty) => {
         pub fn $name(self) -> Result<$retval, ReflectKindError> {
+            // Not Inline: Inline for dyn object is useless.
             match self {
                 Self::Opaque(value) => Ok(value),
                 _ => Err(ReflectKindError {
@@ -97,6 +98,7 @@ macro_rules! impl_cast_fn {
     };
     ($name:ident : $kind:ident => $retval:ty) => {
         pub fn $name(self) -> Result<$retval, ReflectKindError> {
+            // Not Inline: Inline for dyn object is useless.
             match self {
                 Self::$kind(value) => Ok(value),
                 _ => Err(ReflectKindError {

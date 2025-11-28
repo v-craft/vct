@@ -295,7 +295,7 @@ impl TypePath for dyn PartialReflect {
     }
 
     #[inline]
-    fn short_name() -> &'static str {
+    fn type_name() -> &'static str {
         "dyn PartialReflect"
     }
 }

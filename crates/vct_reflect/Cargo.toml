@@ -18,11 +18,13 @@ auto_register = []
 
 auto_register_inventory = [
     "auto_register",
-    "dep:inventory"
+    "dep:inventory",
+    "vct_reflect_derive/auto_register_inventory"
 ]
 
 auto_register_static = [
     "auto_register",
+    "vct_reflect_derive/auto_register_static"
 ]
 
 [dependencies]

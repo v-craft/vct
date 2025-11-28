@@ -20,7 +20,7 @@ impl TypePath for DynamicTuple {
     }
 
     #[inline]
-    fn short_name() -> &'static str {
+    fn type_name() -> &'static str {
         "DynamicTuple"
     }
 

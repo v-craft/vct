@@ -7,9 +7,27 @@ edition = "2024"
 proc-macro = true
 
 [features]
+default = []
+
 reflect_docs = []
 
+auto_register = []
+
+auto_register_inventory = ["auto_register"]
+
+auto_register_static = ["auto_register", "dep:uuid"]
+
 [dependencies]
+proc-macro2 = "1.0"
+quote = "1.0"
+syn = { version = "2.0", features = ["full", "extra-traits"] }
+indexmap = "2.0"
+uuid = { version = "1.18", default-features = false, features = [
+  "v4",
+], optional = true }
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+uuid = { version = "1.18", default-features = false, features = ["js"] }
 
 [lints]
 workspace = true

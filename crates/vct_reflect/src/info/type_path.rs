@@ -10,7 +10,10 @@ pub trait TypePath: 'static {
     /// Returns a short, pretty-print enabled path to the type.
     ///
     /// `Option<Vec<usize>>` -> `"Option<Vec<usize>>"`
-    fn short_name() -> &'static str;
+    ///
+    /// This function should return the `short name`, this may be different from [`core::any::type_name`].
+    /// The result of [`core::any::type_name`] may be a full path name or a short name.
+    fn type_name() -> &'static str;
 
     /// Returns the name of the type, or [`None`] if it is [anonymous].
     ///
@@ -39,8 +42,8 @@ pub trait DynamicTypePath {
     /// See [`TypePath::type_path`].
     fn reflect_type_path(&self) -> &str;
 
-    /// See [`TypePath::short_name`].
-    fn reflect_short_name(&self) -> &str;
+    /// See [`TypePath::type_name`].
+    fn reflect_type_name(&self) -> &str;
 
     /// See [`TypePath::type_ident`].
     fn reflect_type_ident(&self) -> Option<&str>;
@@ -59,8 +62,8 @@ impl<T: TypePath> DynamicTypePath for T {
     }
 
     #[inline]
-    fn reflect_short_name(&self) -> &str {
-        Self::short_name()
+    fn reflect_type_name(&self) -> &str {
+        Self::type_name()
     }
 
     #[inline]
@@ -82,9 +85,12 @@ impl<T: TypePath> DynamicTypePath for T {
 /// Provides dynamic access to all methods on [`TypePath`].
 #[derive(Clone, Copy)]
 pub struct TypePathTable {
-    // Cache the type path as it is likely the only one that will be used.
+    // Most custom types are stored name by `Cow<'static, str>` and initialized on the first access.
+    //
+    // The default implementation only uses `type_path` frequently,
+    // so only cache A here to reduce unnecessary overhead.
     type_path: &'static str,
-    short_name: fn() -> &'static str,
+    type_name: fn() -> &'static str,
     type_ident: fn() -> Option<&'static str>,
     crate_name: fn() -> Option<&'static str>,
     module_path: fn() -> Option<&'static str>,
@@ -92,10 +98,11 @@ pub struct TypePathTable {
 
 impl TypePathTable {
     /// Creates a new table from a type.
+    #[inline]
     pub fn of<T: TypePath + ?Sized>() -> Self {
         Self {
             type_path: T::type_path(),
-            short_name: T::short_name,
+            type_name: T::type_name,
             type_ident: T::type_ident,
             crate_name: T::crate_name,
             module_path: T::module_path,
@@ -108,10 +115,10 @@ impl TypePathTable {
         self.type_path
     }
 
-    /// See [`TypePath::short_name`]
+    /// See [`TypePath::type_name`]
     #[inline]
-    pub fn short_name(&self) -> &'static str {
-        (self.short_name)()
+    pub fn name(&self) -> &'static str {
+        (self.type_name)()
     }
 
     /// See [`TypePath::type_ident`]
@@ -137,7 +144,7 @@ impl fmt::Debug for TypePathTable {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("TypePathVtable")
             .field("type_path", &self.type_path)
-            .field("short_name", &(self.short_name)())
+            .field("type_name", &(self.type_name)())
             .field("type_ident", &(self.type_ident)())
             .field("crate_name", &(self.crate_name)())
             .field("module_path", &(self.module_path)())

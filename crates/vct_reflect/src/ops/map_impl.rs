@@ -20,7 +20,7 @@ impl TypePath for DynamicMap {
         "vct_reflect::ops::DynamicMap"
     }
     #[inline]
-    fn short_name() -> &'static str {
+    fn type_name() -> &'static str {
         "DynamicMap"
     }
     #[inline]

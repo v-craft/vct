@@ -23,7 +23,7 @@ impl TypePath for DynamicArray {
         "vct_reflect::ops::DynamicArray"
     }
     #[inline]
-    fn short_name() -> &'static str {
+    fn type_name() -> &'static str {
         "DynamicArray"
     }
     #[inline]

@@ -25,21 +25,21 @@ use crate::{
 pub enum Accessor<'a> {
     /// A name-based field access on a struct or Enum's struct.
     ///
-    /// Example:  the `id` of `.id`
+    /// Example:  the `id` of `.id` (Default impl)
     FieldName(Cow<'a, str>),
     /// A index-based field access on Tuple, Tuple struct or Enum's tuple.
     ///
-    /// Example:  the `5` of `.5`
+    /// Example:  the `5` of `.5` (Default impl)
     TupleIndex(usize),
     /// An index-based access on List and Array.  
     ///
-    /// Example: the `5` of `[5]`
+    /// Example: the `5` of `[5]` (Default impl)
     ListIndex(usize),
     /// A index-based field access on Struct or Enum's struct.
     ///
     /// Can only be used to access Struct(excluding Tuple struct).
     ///
-    /// Example: the `5` of `"#5"`
+    /// Example: the `5` of `"#5"` (Default impl)
     FieldIndex(usize),
 }
 

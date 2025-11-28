@@ -22,6 +22,8 @@ pub struct NonGenericTypeCell<T: TypedProperty>(OnceLock<T>);
 pub type NonGenericTypeInfoCell = NonGenericTypeCell<TypeInfo>;
 
 /// Container for static storage of non-generic type path
+///
+/// For `&'static str`, there is no need to use this type.
 pub type NonGenericTypePathCell = NonGenericTypeCell<String>;
 
 impl<T: TypedProperty> NonGenericTypeCell<T> {
@@ -47,12 +49,17 @@ impl<T: TypedProperty> Default for NonGenericTypeCell<T> {
 }
 
 /// Container for static storage of type information with generics
+///
+/// `TypePath::type_path` does not have generics.
+///  But if the type itself carries generics, They will share a static CELL.
 pub struct GenericTypeCell<T: TypedProperty>(RwLock<TypeIdMap<&'static T>>);
 
 /// Container for static storage of type information with generics
 pub type GenericTypeInfoCell = GenericTypeCell<TypeInfo>;
 
 /// Container for static storage of type path with generics
+///
+/// For `&'static str`, there is no need to use this type.
 pub type GenericTypePathCell = GenericTypeCell<String>;
 
 impl<T: TypedProperty> GenericTypeCell<T> {
@@ -61,7 +68,7 @@ impl<T: TypedProperty> GenericTypeCell<T> {
         Self(RwLock::new(TypeIdMap::new()))
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn get_or_insert<G, F>(&self, f: F) -> &T
     where
         G: Any + ?Sized,
@@ -72,6 +79,7 @@ impl<T: TypedProperty> GenericTypeCell<T> {
     }
 
     // Separate to reduce code compilation times
+    #[inline(never)]
     fn get_or_insert_by_type_id<F>(&self, type_id: TypeId, f: F) -> &T
     where
         F: FnOnce() -> T,

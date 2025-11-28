@@ -88,12 +88,18 @@ impl TypePath for dyn Reflect {
         "dyn vct_reflect::Reflect"
     }
     #[inline]
-    fn short_name() -> &'static str {
+    fn type_name() -> &'static str {
         "dyn Reflect"
     }
 }
 
 impl Typed for dyn Reflect {
+    /// This is the [`TypeInfo`] of [`dyn Reflect`],
+    /// not the [`TypeInfo`] of the underlying data!!!!
+    ///
+    /// Use [`DynamicTyped::reflect_type_info`] to get underlying [`TypeInfo`].
+    ///
+    /// [`dyn Reflect`]: crate::Reflect
     fn type_info() -> &'static TypeInfo {
         static CELL: NonGenericTypeInfoCell = NonGenericTypeInfoCell::new();
         CELL.get_or_init(|| TypeInfo::Opaque(OpaqueInfo::new::<Self>()))
