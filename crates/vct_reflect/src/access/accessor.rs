@@ -1,10 +1,8 @@
+use alloc::borrow::Cow;
 use core::fmt;
 
-use alloc::{borrow::Cow, vec::Vec};
-
 use crate::{
-    PartialReflect, Reflect,
-    access::{ParseError, parse::PathParser},
+    PartialReflect,
     info::{ReflectKind, VariantKind},
     ops::{ReflectMut, ReflectRef},
 };
@@ -294,69 +292,18 @@ impl<'a> fmt::Display for AccessError<'a> {
 
 impl core::error::Error for AccessError<'_> {}
 
-/// An error returned from a failed path string query.
-#[derive(Debug, PartialEq, Eq)]
-pub enum PathAccessError<'a> {
-    /// An error caused by trying to access a path that's not able to be accessed,
-    /// see [`AccessError`] for details.
-    InvalidAccess(AccessError<'a>),
-
-    /// An error that occurs when a type cannot downcast to a given type.
-    InvalidDowncast,
-
-    /// An error caused by an invalid path string that couldn't be parsed.
-    ParseError {
-        /// Position in `path`.
-        offset: usize,
-        /// The path that the error occurred in.
-        path: &'a str,
-        /// The underlying error.
-        error: ParseError<'a>,
-    },
-}
-
-impl fmt::Display for PathAccessError<'_> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::InvalidAccess(err) => fmt::Display::fmt(err, f),
-            Self::InvalidDowncast => {
-                f.write_str("Can't downcast result of access to the given type")
-            }
-            Self::ParseError {
-                offset,
-                path,
-                error,
-            } => {
-                write!(
-                    f,
-                    "Encountered an error at offset {offset} while parsing `{path}`: {error}"
-                )
-            }
-        }
-    }
-}
-
-impl core::error::Error for PathAccessError<'_> {}
-
-// impl<'a> From<AccessError<'a>> for PathAccessError<'a> {
-//     #[inline]
-//     fn from(value: AccessError<'a>) -> Self {
-//         Self::InvalidAccess(value)
-//     }
-// }
-
 /// An [`Access`] combined with an `offset` for more helpful error reporting.
 ///
 /// Offset is only used to display error messages, unrelated to access.
 #[derive(Debug, Clone, PartialEq, PartialOrd, Ord, Eq, Hash)]
-pub struct OffsetAccessor {
-    pub accessor: Accessor<'static>,
+pub struct OffsetAccessor<'a> {
+    pub accessor: Accessor<'a>,
     pub offset: Option<usize>,
 }
 
-impl From<Accessor<'static>> for OffsetAccessor {
+impl<'a> From<Accessor<'a>> for OffsetAccessor<'a> {
     #[inline]
-    fn from(accessor: Accessor<'static>) -> Self {
+    fn from(accessor: Accessor<'a>) -> Self {
         Self {
             accessor,
             offset: None,
@@ -364,172 +311,31 @@ impl From<Accessor<'static>> for OffsetAccessor {
     }
 }
 
-impl OffsetAccessor {
+impl<'a> OffsetAccessor<'a> {
+    /// Converts this into an "owned" value.
+    #[inline]
+    pub fn into_owned(self) -> OffsetAccessor<'static> {
+        OffsetAccessor {
+            accessor: self.accessor.into_owned(),
+            offset: self.offset,
+        }
+    }
+
+    /// Dynamic Access Fields, If successful, return the reference of the field.
     #[inline]
     pub fn access<'r>(
         &self,
         base: &'r dyn PartialReflect,
-    ) -> Result<&'r dyn PartialReflect, AccessError<'static>> {
+    ) -> Result<&'r dyn PartialReflect, AccessError<'a>> {
         self.accessor.access(base, self.offset)
     }
 
+    /// Dynamic Access Fields, If successful, return the mutable reference of the field.
     #[inline]
     pub fn access_mut<'r>(
         &self,
         base: &'r mut dyn PartialReflect,
-    ) -> Result<&'r mut dyn PartialReflect, AccessError<'static>> {
+    ) -> Result<&'r mut dyn PartialReflect, AccessError<'a>> {
         self.accessor.access_mut(base, self.offset)
-    }
-}
-
-/// Reusable path accessor, wrapper of [`Vec<OffsetAccessor>`] .
-///
-/// [`OffsetAccessor`] and [`Accessor`] only allow access to a single level,
-/// while this type allows for complete path queries.
-///
-/// Unlike [`ReflectPathAccess`], this container parses the path string only once during initialization.
-/// However, for non-static strings, it requires copying for storage.
-///
-/// [`ReflectPathAccess`]: crate::access::ReflectPathAccess
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct PathAccessor(Vec<OffsetAccessor>);
-
-impl From<Vec<OffsetAccessor>> for PathAccessor {
-    #[inline]
-    fn from(value: Vec<OffsetAccessor>) -> Self {
-        Self(value)
-    }
-}
-
-impl PathAccessor {
-    /// Parse the path string and create an [`PathAccessor`].
-    /// If the path is incorrect, it will return [`ParseError`].
-    ///
-    /// This function will create a [`String`] for each path segment.
-    /// For '&'static str', please consider using ['parse_static'] for better performance.
-    ///
-    /// [`String`]: alloc::string::String
-    /// ['parse_static']: crate::access::PathAccessor::parse_static
-    pub fn parse(path: &str) -> Result<Self, ParseError<'_>> {
-        let mut vc: Vec<OffsetAccessor> = Vec::new();
-        for (res, offset) in PathParser::new(path) {
-            let accessor = res?;
-            vc.push(OffsetAccessor {
-                accessor: accessor.into_owned(),
-                offset: Some(offset),
-            });
-        }
-        Ok(Self(vc))
-    }
-
-    /// Parse the path string and create an [`PathAccessor`].
-    /// If the path is incorrect, it will return [`ParseError`].
-    ///
-    /// Can only be used for '&'static str', internal storage string references,
-    /// no need to create additional [`String`].
-    ///
-    /// [`String`]: alloc::string::String
-    pub fn parse_static(path: &'static str) -> Result<Self, ParseError<'static>> {
-        let mut vc: Vec<OffsetAccessor> = Vec::new();
-        for (res, offset) in PathParser::new(path) {
-            vc.push(OffsetAccessor {
-                accessor: res?,
-                offset: Some(offset),
-            });
-        }
-        Ok(Self(vc))
-    }
-
-    /// Return the length of the internal [`Vec`],
-    /// which is the number of [`OffsetAccessor`].
-    #[inline]
-    pub fn len(&self) -> usize {
-        self.0.len()
-    }
-
-    /// The parse function directly uses [`Vec::push`] to add elements,
-    /// which may result in redundant memory.
-    ///
-    /// An [`OffsetAccessor`] is 40 bytes. The std [`Vec`] expands in the pattern of `0->4->8->16`.
-    /// Since path queries typically don't exceed a length of 4, these overheads are acceptable.
-    ///
-    /// But if needed, you can try using this function to
-    /// shrinks the capacity as much as possible.
-    ///
-    /// See: [`Vec::shrink_to_fit`]
-    #[inline]
-    pub fn shrink_to_fit(&mut self) {
-        self.0.shrink_to_fit();
-    }
-
-    /// Returns a reference to the value specified by `path`.
-    ///
-    /// The accessor itself will not change and can be reused.
-    pub fn access<'r>(
-        &self,
-        base: &'r dyn PartialReflect,
-    ) -> Result<&'r dyn PartialReflect, PathAccessError<'static>> {
-        let mut it = base;
-        for accessor in &self.0 {
-            it = match accessor.access(it) {
-                Ok(val) => val,
-                Err(err) => return Err(PathAccessError::InvalidAccess(err)),
-            };
-        }
-        Ok(it)
-    }
-
-    /// Returns a mutable reference to the value specified by `path`.
-    ///
-    /// The accessor itself will not change and can be reused.
-    pub fn access_mut<'r>(
-        &self,
-        base: &'r mut dyn PartialReflect,
-    ) -> Result<&'r mut dyn PartialReflect, PathAccessError<'static>> {
-        let mut it = base;
-        for accessor in &self.0 {
-            it = match accessor.access_mut(it) {
-                Ok(val) => val,
-                Err(err) => return Err(PathAccessError::InvalidAccess(err)),
-            };
-        }
-        Ok(it)
-    }
-
-    /// Returns a typed reference to the value specified by `path`.
-    ///
-    /// The accessor itself will not change and can be reused.
-    pub fn access_as<'r, T: Reflect>(
-        &self,
-        base: &'r dyn PartialReflect,
-    ) -> Result<&'r T, PathAccessError<'static>> {
-        let res = self.access(base)?;
-        match res.try_downcast_ref::<T>() {
-            Some(val) => Ok(val),
-            None => Err(PathAccessError::InvalidDowncast),
-        }
-    }
-
-    /// Returns a mutable typed reference to the value specified by `path`.
-    ///
-    /// The accessor itself will not change and can be reused.
-    pub fn access_mut_as<'r, T: Reflect>(
-        &self,
-        base: &'r mut dyn PartialReflect,
-    ) -> Result<&'r mut T, PathAccessError<'static>> {
-        let res = self.access_mut(base)?;
-        match res.try_downcast_mut::<T>() {
-            Some(val) => Ok(val),
-            None => Err(PathAccessError::InvalidDowncast),
-        }
-    }
-}
-
-impl fmt::Display for PathAccessor {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        for it in &self.0 {
-            fmt::Display::fmt(&it.accessor, f)?;
-        }
-        Ok(())
     }
 }

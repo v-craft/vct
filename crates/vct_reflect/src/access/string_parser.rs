@@ -1,10 +1,8 @@
-use crate::access::Accessor;
-use core::{
-    fmt::{self, Write},
-    num::ParseIntError,
-};
+use alloc::{borrow::Cow, format};
+use core::fmt::{self, Write};
 
-#[derive(Debug, PartialEq, Eq)]
+use crate::access::{AccessPath, Accessor, OffsetAccessor, ParseError};
+
 struct Ident<'a>(&'a str);
 
 impl<'a> Ident<'a> {
@@ -12,6 +10,7 @@ impl<'a> Ident<'a> {
     /// All other string will be converted to [`Accessor::Field`] (Including incorrect ident, such as "1a2").
     ///
     /// Both start with dot and cannot be directly distinguished.
+    #[inline(always)]
     fn field(self) -> Accessor<'a> {
         match self.0.parse() {
             Ok(index) => Accessor::TupleIndex(index),
@@ -19,19 +18,26 @@ impl<'a> Ident<'a> {
         }
     }
 
+    #[inline(always)]
     fn field_index(self) -> Result<Accessor<'a>, InnerError<'a>> {
-        Ok(Accessor::FieldIndex(self.0.parse()?))
+        match self.0.parse() {
+            Ok(index) => Ok(Accessor::FieldIndex(index)),
+            Err(_) => Err(InnerError::InvalidIndex(self)),
+        }
     }
 
+    #[inline(always)]
     fn list_index(self) -> Result<Accessor<'a>, InnerError<'a>> {
-        Ok(Accessor::FieldIndex(self.0.parse()?))
+        match self.0.parse() {
+            Ok(index) => Ok(Accessor::ListIndex(index)),
+            Err(_) => Err(InnerError::InvalidIndex(self)),
+        }
     }
 }
 
 // NOTE: We use repr(u8) so that the `match byte` in `Token::symbol_from_byte`
 // becomes a "check `byte` is one of SYMBOLS and forward its value" this makes
 // the optimizer happy, and shaves off a few cycles.
-#[derive(Debug, PartialEq, Eq)]
 #[repr(u8)]
 enum Token<'a> {
     Dot = b'.',
@@ -69,84 +75,48 @@ impl fmt::Display for Token<'_> {
 }
 
 // Seal visibility
-#[derive(Debug, PartialEq, Eq)]
 enum InnerError<'a> {
     NoIdent,
     IsNotIdent(Token<'a>),
     UnexpectedIdent(Ident<'a>),
-    InvalidIndex(ParseIntError),
+    InvalidIndex(Ident<'a>),
     Unclosed,
     BadClose(Token<'a>),
     CloseBeforeOpen,
 }
 
-impl From<ParseIntError> for InnerError<'static> {
-    #[inline]
-    fn from(value: ParseIntError) -> Self {
-        InnerError::InvalidIndex(value)
-    }
-}
-
-impl fmt::Display for InnerError<'_> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl<'a> InnerError<'a> {
+    #[inline(always)]
+    fn as_cow(&self) -> Cow<'a, str> {
         match self {
-            InnerError::NoIdent => {
-                write!(f, "expected an identifier, but reached end of path string")
-            }
+            InnerError::NoIdent => "expected an identifier, but reached end of path string".into(),
             InnerError::IsNotIdent(token) => {
-                write!(f, "expected an identifier, got '{token}' instead")
+                format!("expected an identifier, got '{token}' instead").into()
             }
             InnerError::UnexpectedIdent(ident) => {
-                write!(f, "expected a keyword ('#.[]'), got '{}' instead", ident.0)
+                format!("expected a keyword ('#.[]'), got '{}' instead", ident.0).into()
             }
-            InnerError::InvalidIndex(_) => write!(f, "failed to parse index as integer"),
-            InnerError::Unclosed => write!(
-                f,
-                "a '[' wasn't closed, reached end of path string before finding a ']'"
-            ),
+            InnerError::InvalidIndex(ident) => {
+                format!("failed to parse index as integer: {}", ident.0).into()
+            }
+            InnerError::Unclosed => {
+                "a '[' wasn't closed, reached end of path string before finding a ']'".into()
+            }
             InnerError::BadClose(token) => {
-                write!(f, "a '[' wasn't closed properly, got '{token}' instead")
+                format!("a '[' wasn't closed properly, got '{token}' instead").into()
             }
-            InnerError::CloseBeforeOpen => write!(f, "a ']' was found before an opening '['"),
+            InnerError::CloseBeforeOpen => "a ']' was found before an opening '['".into(),
         }
     }
 }
 
-impl core::error::Error for InnerError<'_> {}
-
-/// An error that occurs when parsing reflect path strings.
-#[derive(Debug, PartialEq, Eq)]
-pub struct ParseError<'a>(InnerError<'a>);
-
-impl fmt::Display for ParseError<'_> {
-    #[inline]
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        <InnerError as fmt::Debug>::fmt(&self.0, f)
-    }
-}
-
-impl core::error::Error for ParseError<'_> {}
-
 // A one-time path parser
-pub(super) struct PathParser<'a> {
+struct PathParser<'a> {
     path: &'a str,
     remaining: &'a [u8],
 }
 
 impl<'a> PathParser<'a> {
-    #[inline]
-    pub(crate) fn new(path: &'a str) -> Self {
-        Self {
-            path,
-            remaining: path.as_bytes(),
-        }
-    }
-
-    #[inline]
-    fn offset(&self) -> usize {
-        self.path.len() - self.remaining.len()
-    }
-
     // Get the next token, skip spaces.
     //
     // The obtained ident will remove the trailing space.
@@ -184,6 +154,7 @@ impl<'a> PathParser<'a> {
         }
     }
 
+    #[inline(always)]
     fn following_accessor(&mut self, token: Token<'a>) -> Result<Accessor<'a>, InnerError<'a>> {
         match token {
             Token::Dot => Ok(self.next_ident()?.field()),
@@ -203,15 +174,46 @@ impl<'a> PathParser<'a> {
 }
 
 impl<'a> Iterator for PathParser<'a> {
-    type Item = (Result<Accessor<'a>, ParseError<'a>>, usize);
+    type Item = Result<OffsetAccessor<'a>, ParseError<'a>>;
 
+    #[inline(never)]
     fn next(&mut self) -> Option<Self::Item> {
+        // Inline Never:
+        // - `following_accessor` is inlined always
+        // - `next_ident` is inlined
+        // - `next_token` may be inlined
         let token = self.next_token()?;
-        let offset = self.offset();
-        Some((
-            self.following_accessor(token)
-                .map_err(|error| ParseError(error)),
-            offset,
-        ))
+        let offset = self.path.len() - self.remaining.len();
+
+        let res = match self.following_accessor(token) {
+            Ok(accessor) => Ok(OffsetAccessor {
+                accessor,
+                offset: Some(offset),
+            }),
+            Err(err) => {
+                // Ensure that next returns `None` after an error occurs
+                self.remaining = "".as_bytes();
+                Err(ParseError {
+                    offset,
+                    path: self.path,
+                    error: err.as_cow(),
+                })
+            }
+        };
+
+        Some(res)
+    }
+}
+
+/// impl for str
+impl<'a> AccessPath<'a> for &'a str {
+    #[inline]
+    fn parse_to_accessor(
+        &self,
+    ) -> impl Iterator<Item = Result<OffsetAccessor<'a>, ParseError<'a>>> {
+        PathParser {
+            path: self,
+            remaining: self.as_bytes(),
+        }
     }
 }

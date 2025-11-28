@@ -17,3 +17,6 @@ pub use reflect::{
 };
 
 mod impls;
+
+// For macro implementation, users should not use
+pub mod __macro_exports;

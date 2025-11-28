@@ -17,7 +17,7 @@ impl TypeTraitDefault {
 impl<T: Default + Reflect> FromType<T> for TypeTraitDefault {
     fn from_type() -> Self {
         Self {
-            default: || Box::new(T::default()) as Box<dyn Reflect>,
+            default: || Box::<T>::default(),
         }
     }
 }

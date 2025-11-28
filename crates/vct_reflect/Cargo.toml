@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [features]
-default = ["std"]
+default = ["std", "auto_register_inventory"]
 
 std = [
     "vct_utils/std",
@@ -14,9 +14,24 @@ std = [
 
 reflect_docs = []
 
+auto_register = []
+
+auto_register_inventory = [
+    "auto_register",
+    "dep:inventory"
+]
+
+auto_register_static = [
+    "auto_register",
+]
+
 [dependencies]
+vct_reflect_derive = { path = "derive" }
 vct_utils = { path = "../vct_utils", default-features = false }
 vct_os = { path = "../vct_os", default-features = false }
+
+# auto_register_inventory
+inventory = { version = "0.3", optional = true }
 
 serde = { version = "1", default-features = false, features = ["alloc"] }
 

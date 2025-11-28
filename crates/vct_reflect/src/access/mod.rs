@@ -1,10 +1,15 @@
-mod parse;
-pub use parse::ParseError;
+// Single layer path access interface.
+// Fixed interface, no need to implement.
+mod accessor;
+pub use accessor::{AccessError, AccessErrorKind, Accessor, OffsetAccessor};
 
-mod access_impl;
-pub use access_impl::{
-    AccessError, AccessErrorKind, Accessor, OffsetAccessor, PathAccessError, PathAccessor,
-};
+// An abstract "Path" interface that allows users to customize "Path" that can be parsed.
+mod path;
+pub use path::{AccessPath, ParseError};
 
-mod reflect_access;
-pub use reflect_access::ReflectPathAccess;
+// impl AccessPath for &str
+mod string_parser;
+
+// Provide complete path access API
+mod path_access;
+pub use path_access::{PathAccessError, PathAccessor, ReflectPathAccess};

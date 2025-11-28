@@ -1,3 +1,16 @@
+//! Implement reflection traits for tuples with a field count of 12 or less.
+//!
+//! - [`TypePath`] -> [`DynamicTypePath`]
+//! - [`Typed`] -> [`MaybeTyped`] + [`DynamicTyped`]
+//! - [`PartialReflect`]
+//! - [`Tuple`]
+//! - [`Reflect`]
+//! - [`GetTypeTraits`]
+//! - [`FromReflect`]
+//!
+//! [`DynamicTypePath`]: crate::info::DynamicTypePath
+//! [`DynamicTyped`]: crate::info::DynamicTyped
+
 use crate::{
     FromReflect, PartialReflect, Reflect,
     cell::{GenericTypeInfoCell, GenericTypePathCell},

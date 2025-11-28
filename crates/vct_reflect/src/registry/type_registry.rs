@@ -108,7 +108,7 @@ impl TypeRegistry {
     }
 
     pub fn new() -> Self {
-        let mut registry = Self::empty();
+        let mut _registry = Self::empty();
 
         todo!()
     }
