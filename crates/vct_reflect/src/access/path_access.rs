@@ -1,5 +1,5 @@
 use crate::{
-    PartialReflect, Reflect,
+    Reflect,
     access::{AccessError, AccessPath, OffsetAccessor, ParseError},
     ops::{Array, Enum, List, Struct, Tuple, TupleStruct},
 };
@@ -118,8 +118,8 @@ impl PathAccessor {
     /// The accessor itself will not change and can be reused.
     pub fn access<'r>(
         &self,
-        base: &'r dyn PartialReflect,
-    ) -> Result<&'r dyn PartialReflect, PathAccessError<'static>> {
+        base: &'r dyn Reflect,
+    ) -> Result<&'r dyn Reflect, PathAccessError<'static>> {
         let mut it = base;
         for accessor in &self.0 {
             it = match accessor.access(it) {
@@ -135,8 +135,8 @@ impl PathAccessor {
     /// The accessor itself will not change and can be reused.
     pub fn access_mut<'r>(
         &self,
-        base: &'r mut dyn PartialReflect,
-    ) -> Result<&'r mut dyn PartialReflect, PathAccessError<'static>> {
+        base: &'r mut dyn Reflect,
+    ) -> Result<&'r mut dyn Reflect, PathAccessError<'static>> {
         let mut it = base;
         for accessor in &self.0 {
             it = match accessor.access_mut(it) {
@@ -152,10 +152,10 @@ impl PathAccessor {
     /// The accessor itself will not change and can be reused.
     pub fn access_as<'r, T: Reflect>(
         &self,
-        base: &'r dyn PartialReflect,
+        base: &'r dyn Reflect,
     ) -> Result<&'r T, PathAccessError<'static>> {
         let res = self.access(base)?;
-        match res.try_downcast_ref::<T>() {
+        match res.downcast_ref::<T>() {
             Some(val) => Ok(val),
             None => Err(PathAccessError::InvalidDowncast),
         }
@@ -166,10 +166,10 @@ impl PathAccessor {
     /// The accessor itself will not change and can be reused.
     pub fn access_mut_as<'r, T: Reflect>(
         &self,
-        base: &'r mut dyn PartialReflect,
+        base: &'r mut dyn Reflect,
     ) -> Result<&'r mut T, PathAccessError<'static>> {
         let res = self.access_mut(base)?;
-        match res.try_downcast_mut::<T>() {
+        match res.downcast_mut::<T>() {
             Some(val) => Ok(val),
             None => Err(PathAccessError::InvalidDowncast),
         }
@@ -193,7 +193,7 @@ pub trait ReflectPathAccess {
     fn access<'a, 'b>(
         &'a self,
         path: impl AccessPath<'b>,
-    ) -> Result<&'a dyn PartialReflect, PathAccessError<'b>>;
+    ) -> Result<&'a dyn Reflect, PathAccessError<'b>>;
 
     /// Returns a mutable reference to the value specified by `path`.
     ///
@@ -201,7 +201,7 @@ pub trait ReflectPathAccess {
     fn access_mut<'a, 'b>(
         &'a mut self,
         path: impl AccessPath<'b>,
-    ) -> Result<&'a mut dyn PartialReflect, PathAccessError<'b>>;
+    ) -> Result<&'a mut dyn Reflect, PathAccessError<'b>>;
 
     /// Returns a typed reference to the value specified by `path`.
     ///
@@ -220,13 +220,13 @@ pub trait ReflectPathAccess {
     ) -> Result<&'a mut T, PathAccessError<'b>>;
 }
 
-impl ReflectPathAccess for dyn PartialReflect {
+impl ReflectPathAccess for dyn Reflect {
     #[inline(never)]
     fn access<'a, 'b>(
         &'a self,
         path: impl AccessPath<'b>,
-    ) -> Result<&'a dyn PartialReflect, PathAccessError<'b>> {
-        let mut it: &dyn PartialReflect = self;
+    ) -> Result<&'a dyn Reflect, PathAccessError<'b>> {
+        let mut it: &dyn Reflect = self;
         for res in path.parse_to_accessor() {
             let accessor = res?;
             it = accessor.access(it)?;
@@ -238,8 +238,8 @@ impl ReflectPathAccess for dyn PartialReflect {
     fn access_mut<'a, 'b>(
         &'a mut self,
         path: impl AccessPath<'b>,
-    ) -> Result<&'a mut dyn PartialReflect, PathAccessError<'b>> {
-        let mut it: &mut dyn PartialReflect = self;
+    ) -> Result<&'a mut dyn Reflect, PathAccessError<'b>> {
+        let mut it: &mut dyn Reflect = self;
         for res in path.parse_to_accessor() {
             let accessor = res?;
             it = accessor.access_mut(it)?;
@@ -255,7 +255,7 @@ impl ReflectPathAccess for dyn PartialReflect {
         // Not Inline `access`: Reduce compilation time.
         // Now `access` is compiled only once per impl, independent of T.
         let it = ReflectPathAccess::access(self, path)?;
-        match it.try_downcast_ref::<T>() {
+        match it.downcast_ref::<T>() {
             Some(it) => Ok(it),
             None => Err(PathAccessError::InvalidDowncast),
         }
@@ -269,7 +269,7 @@ impl ReflectPathAccess for dyn PartialReflect {
         // Not Inline `access`: Reduce compilation time.
         // Now `access` is compiled only once per impl, independent of T.
         let it = ReflectPathAccess::access_mut(self, path)?;
-        match it.try_downcast_mut::<T>() {
+        match it.downcast_mut::<T>() {
             Some(it) => Ok(it),
             None => Err(PathAccessError::InvalidDowncast),
         }
@@ -282,18 +282,18 @@ macro_rules! impl_reflect_path_access {
         fn access<'a, 'b>(
             &'a self,
             path: impl AccessPath<'b>,
-        ) -> Result<&'a dyn PartialReflect, PathAccessError<'b>> {
+        ) -> Result<&'a dyn Reflect, PathAccessError<'b>> {
             // Significantly reduce compilation time
-            <dyn PartialReflect as ReflectPathAccess>::access(self, path)
+            <dyn Reflect as ReflectPathAccess>::access(self, path)
         }
 
         #[inline(always)]
         fn access_mut<'a, 'b>(
             &'a mut self,
             path: impl AccessPath<'b>,
-        ) -> Result<&'a mut dyn PartialReflect, PathAccessError<'b>> {
+        ) -> Result<&'a mut dyn Reflect, PathAccessError<'b>> {
             // Significantly reduce compilation time
-            <dyn PartialReflect as ReflectPathAccess>::access_mut(self, path)
+            <dyn Reflect as ReflectPathAccess>::access_mut(self, path)
         }
 
         #[inline(always)]
@@ -302,7 +302,7 @@ macro_rules! impl_reflect_path_access {
             path: impl AccessPath<'b>,
         ) -> Result<&'a T, PathAccessError<'b>> {
             // Significantly reduce compilation time
-            <dyn PartialReflect as ReflectPathAccess>::access_as::<T>(self, path)
+            <dyn Reflect as ReflectPathAccess>::access_as::<T>(self, path)
         }
 
         #[inline(always)]
@@ -311,7 +311,7 @@ macro_rules! impl_reflect_path_access {
             path: impl AccessPath<'b>,
         ) -> Result<&'a mut T, PathAccessError<'b>> {
             // Significantly reduce compilation time
-            <dyn PartialReflect as ReflectPathAccess>::access_mut_as::<T>(self, path)
+            <dyn Reflect as ReflectPathAccess>::access_mut_as::<T>(self, path)
         }
     };
     (dyn $name:ident) => {
@@ -326,9 +326,8 @@ macro_rules! impl_reflect_path_access {
     };
 }
 
-impl_reflect_path_access!(T: PartialReflect);
+impl_reflect_path_access!(T: Reflect);
 
-impl_reflect_path_access!(dyn Reflect);
 impl_reflect_path_access!(dyn Struct);
 impl_reflect_path_access!(dyn TupleStruct);
 impl_reflect_path_access!(dyn Tuple);

@@ -1,19 +1,21 @@
+use alloc::borrow::Cow;
+use core::fmt;
+use vct_os::sync::Arc;
+
 use crate::info::{
-    CustomAttributes, MaybeTyped, Type, TypeInfo, TypePath,
+    CustomAttributes, Type, TypeInfo, Typed,
     attributes::{impl_custom_attributes_fn, impl_with_custom_attributes},
     docs_macro::impl_docs_fn,
     type_struct::impl_type_fn,
 };
-use alloc::borrow::Cow;
-use core::fmt;
-use vct_os::sync::Arc;
+
 
 /// named field(struct field)
 #[derive(Clone, Debug)]
 pub struct NamedField {
     ty: Type,
     name: &'static str,
-    type_info: fn() -> Option<&'static TypeInfo>,
+    type_info: fn() -> &'static TypeInfo,
     custom_attributes: Option<Arc<CustomAttributes>>,
     #[cfg(feature = "reflect_docs")]
     docs: Option<&'static str>,
@@ -27,10 +29,10 @@ impl NamedField {
 
     /// Create a new container
     #[inline]
-    pub fn new<T: MaybeTyped + TypePath>(name: &'static str) -> Self {
+    pub fn new<T: Typed>(name: &'static str) -> Self {
         Self {
             name,
-            type_info: T::maybe_type_info,
+            type_info: T::type_info,
             ty: Type::of::<T>(),
             custom_attributes: None,
             #[cfg(feature = "reflect_docs")]
@@ -46,7 +48,7 @@ impl NamedField {
 
     /// Get field type info
     #[inline]
-    pub fn type_info(&self) -> Option<&'static TypeInfo> {
+    pub fn type_info(&self) -> &'static TypeInfo {
         (self.type_info)()
     }
 }
@@ -56,7 +58,7 @@ impl NamedField {
 pub struct UnnamedField {
     ty: Type,
     index: usize,
-    type_info: fn() -> Option<&'static TypeInfo>,
+    type_info: fn() -> &'static TypeInfo,
     custom_attributes: Option<Arc<CustomAttributes>>,
     #[cfg(feature = "reflect_docs")]
     docs: Option<&'static str>,
@@ -70,10 +72,10 @@ impl UnnamedField {
 
     /// Create a new container
     #[inline]
-    pub fn new<T: MaybeTyped + TypePath>(index: usize) -> Self {
+    pub fn new<T: Typed>(index: usize) -> Self {
         Self {
             index,
-            type_info: T::maybe_type_info,
+            type_info: T::type_info,
             ty: Type::of::<T>(),
             custom_attributes: None,
             #[cfg(feature = "reflect_docs")]
@@ -89,7 +91,7 @@ impl UnnamedField {
 
     /// Get field type info
     #[inline]
-    pub fn type_info(&self) -> Option<&'static TypeInfo> {
+    pub fn type_info(&self) -> &'static TypeInfo {
         (self.type_info)()
     }
 }

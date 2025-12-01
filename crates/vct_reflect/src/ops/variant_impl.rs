@@ -1,5 +1,5 @@
 use crate::{
-    PartialReflect,
+    Reflect,
     info::VariantKind,
     ops::{DynamicStruct, DynamicTuple, Enum, Struct, Tuple},
 };
@@ -45,9 +45,9 @@ impl From<DynamicStruct> for DynamicVariant {
 
 pub enum VariantField<'a> {
     /// The name and value of a field in a struct variant.
-    Struct(&'a str, &'a dyn PartialReflect),
+    Struct(&'a str, &'a dyn Reflect),
     /// The value of a field in a tuple variant.
-    Tuple(&'a dyn PartialReflect),
+    Tuple(&'a dyn Reflect),
 }
 
 impl<'a> VariantField<'a> {
@@ -63,7 +63,7 @@ impl<'a> VariantField<'a> {
 
     /// Gets a reference to the value of this field.
     #[inline]
-    pub fn value(&self) -> &'a dyn PartialReflect {
+    pub fn value(&self) -> &'a dyn Reflect {
         match *self {
             Self::Struct(_, value) | Self::Tuple(value) => value,
         }

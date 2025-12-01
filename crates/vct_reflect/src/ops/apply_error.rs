@@ -1,6 +1,7 @@
-use crate::info::{ReflectKind, ReflectKindError};
-use alloc::boxed::Box;
+use alloc::string::String;
 use core::{error, fmt};
+
+use crate::info::{ReflectKind, ReflectKindError};
 
 /// A enumeration of all error outcomes
 /// that might happen when running [`try_apply`](crate::PartialReflect::try_apply).
@@ -13,20 +14,20 @@ pub enum ApplyError {
     },
     /// Enum variant that we tried to apply to was missing a field.
     MissingEnumField {
-        variant_name: Box<str>,
-        field_name: Box<str>,
+        variant_name: String,
+        field_name: String,
     },
     /// Tried to apply incompatible types.
     MismatchedTypes {
-        from_type: Box<str>,
-        to_type: Box<str>,
+        from_type: String,
+        to_type: String,
     },
     /// Attempted to apply an [array-like] type to another of different size, e.g. a [u8; 4] to [u8; 3].
     DifferentSize { from_size: usize, to_size: usize },
     /// The enum we tried to apply to didn't contain a variant with the give name.
     UnknownVariant {
-        enum_name: Box<str>,
-        variant_name: Box<str>,
+        enum_name: String,
+        variant_name: String,
     },
 }
 

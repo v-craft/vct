@@ -1,10 +1,11 @@
-use crate::info::{
-    ArrayInfo, EnumInfo, ListInfo, MapInfo, OpaqueInfo, SetInfo, StructInfo, TupleInfo,
-    TupleStructInfo, CustomAttributes, Type, TypePathTable, generics::impl_generic_fn,
-};
 use core::{
     any::{Any, TypeId},
     error, fmt,
+};
+
+use crate::info::{
+    ArrayInfo, EnumInfo, ListInfo, MapInfo, OpaqueInfo, SetInfo, StructInfo, TupleInfo,
+    TupleStructInfo, CustomAttributes, Type, TypePathTable, Generics,
 };
 
 /// A Enum for representing the kind of type
@@ -95,18 +96,6 @@ impl TypeInfo {
     impl_cast_method!(as_enum: Enum => EnumInfo);
     impl_cast_method!(as_opaque: Opaque => OpaqueInfo);
 
-    impl_generic_fn!(self => match self {
-        Self::Struct(info) => info.generics(),
-        Self::TupleStruct(info) => info.generics(),
-        Self::Tuple(info) => info.generics(),
-        Self::List(info) => info.generics(),
-        Self::Array(info) => info.generics(),
-        Self::Map(info) => info.generics(),
-        Self::Set(info) => info.generics(),
-        Self::Enum(info) => info.generics(),
-        Self::Opaque(info) => info.generics(),
-    });
-
     /// Get underlying [`Type`]
     pub fn ty(&self) -> &Type {
         // Not inline: Avoid recursive inline
@@ -143,7 +132,7 @@ impl TypeInfo {
 
     /// Check if the types are same
     #[inline]
-    pub fn is<T: Any>(&self) -> bool {
+    pub fn type_is<T: Any>(&self) -> bool {
         self.ty().is::<T>()
     }
 
@@ -163,8 +152,25 @@ impl TypeInfo {
         }
     }
 
-    #[inline]
+
+    pub fn generics(&self) -> &Generics {
+        // Not inline: Avoid recursive inline
+        match self {
+            Self::Struct(info) => info.generics(),
+            Self::TupleStruct(info) => info.generics(),
+            Self::Tuple(info) => info.generics(),
+            Self::List(info) => info.generics(),
+            Self::Array(info) => info.generics(),
+            Self::Map(info) => info.generics(),
+            Self::Set(info) => info.generics(),
+            Self::Enum(info) => info.generics(),
+            Self::Opaque(info) => info.generics(),
+        }
+    }
+
+
     pub fn custom_attributes(&self) -> Option<&CustomAttributes> {
+        // Not inline: Avoid recursive inline
         match self {
             Self::Struct(info) => info.custom_attributes(),
             Self::TupleStruct(info) => info.custom_attributes(),

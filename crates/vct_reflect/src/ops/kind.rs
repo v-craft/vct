@@ -1,5 +1,5 @@
 use crate::{
-    PartialReflect,
+    Reflect,
     info::{ReflectKind, ReflectKindError},
     ops::{Array, Enum, List, Map, Set, Struct, Tuple, TupleStruct},
 };
@@ -22,7 +22,7 @@ pub enum ReflectRef<'a> {
     Map(&'a dyn Map),
     Set(&'a dyn Set),
     Enum(&'a dyn Enum),
-    Opaque(&'a dyn PartialReflect),
+    Opaque(&'a dyn Reflect),
 }
 
 /// A mutable enumeration of ["kinds"] of a reflected type.
@@ -42,7 +42,7 @@ pub enum ReflectMut<'a> {
     Map(&'a mut dyn Map),
     Set(&'a mut dyn Set),
     Enum(&'a mut dyn Enum),
-    Opaque(&'a mut dyn PartialReflect),
+    Opaque(&'a mut dyn Reflect),
 }
 
 /// An owned enumeration of ["kinds"] of a reflected type.
@@ -62,7 +62,7 @@ pub enum ReflectOwned {
     Map(Box<dyn Map>),
     Set(Box<dyn Set>),
     Enum(Box<dyn Enum>),
-    Opaque(Box<dyn PartialReflect>),
+    Opaque(Box<dyn Reflect>),
 }
 
 macro_rules! impl_kind_fn {
@@ -120,7 +120,7 @@ impl<'a> ReflectRef<'a> {
     impl_cast_fn!(as_map: Map => &'a dyn Map);
     impl_cast_fn!(as_set: Set => &'a dyn Set);
     impl_cast_fn!(as_enum: Enum => &'a dyn Enum);
-    impl_cast_fn!(as_opaque: Opaque => &'a dyn PartialReflect);
+    impl_cast_fn!(as_opaque: Opaque => &'a dyn Reflect);
 }
 
 impl<'a> ReflectMut<'a> {
@@ -133,7 +133,7 @@ impl<'a> ReflectMut<'a> {
     impl_cast_fn!(as_map: Map => &'a mut dyn Map);
     impl_cast_fn!(as_set: Set => &'a mut dyn Set);
     impl_cast_fn!(as_enum: Enum => &'a mut dyn Enum);
-    impl_cast_fn!(as_opaque: Opaque => &'a mut dyn PartialReflect);
+    impl_cast_fn!(as_opaque: Opaque => &'a mut dyn Reflect);
 }
 
 impl ReflectOwned {
@@ -146,5 +146,5 @@ impl ReflectOwned {
     impl_cast_fn!(into_map: Map => Box<dyn Map>);
     impl_cast_fn!(into_set: Set => Box<dyn Set>);
     impl_cast_fn!(into_enum: Enum => Box<dyn Enum>);
-    impl_cast_fn!(into_opaque: Opaque => Box<dyn PartialReflect>);
+    impl_cast_fn!(into_opaque: Opaque => Box<dyn Reflect>);
 }

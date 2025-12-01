@@ -1,3 +1,7 @@
+use alloc::boxed::Box;
+use vct_os::sync::Arc;
+use vct_utils::collections::HashMap;
+
 use crate::{
     info::{
         CustomAttributes, Generics, NamedField, Type, TypePath,
@@ -8,9 +12,6 @@ use crate::{
     },
     ops::Struct,
 };
-use alloc::boxed::Box;
-use vct_os::sync::Arc;
-use vct_utils::collections::HashMap;
 
 /// Container for storing compile-time struct information (including unit struct)
 #[derive(Clone, Debug)]
@@ -35,7 +36,7 @@ impl StructInfo {
     /// Create a new container
     ///
     /// The order of fields inside the container is fixed
-    pub fn new<T: TypePath + Struct>(fields: &[NamedField]) -> Self {
+    pub fn new<T: Struct + TypePath>(fields: &[NamedField]) -> Self {
         let field_indices = fields
             .iter()
             .enumerate()

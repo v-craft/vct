@@ -2,9 +2,7 @@ use alloc::borrow::Cow;
 use core::fmt;
 
 use crate::{
-    PartialReflect,
-    info::{ReflectKind, VariantKind},
-    ops::{ReflectMut, ReflectRef},
+    Reflect, info::{ReflectKind, VariantKind}, ops::{ReflectMut, ReflectRef}
 };
 
 /// A **singular** element access within a path.
@@ -131,12 +129,12 @@ impl<'a> Accessor<'a> {
     /// Dynamic Access Fields, If successful, return the reference of the field.
     pub fn access<'r>(
         &self,
-        base: &'r dyn PartialReflect,
+        base: &'r dyn Reflect,
         offset: Option<usize>, // use for error info
-    ) -> Result<&'r dyn PartialReflect, AccessError<'a>> {
+    ) -> Result<&'r dyn Reflect, AccessError<'a>> {
         use ReflectRef::*;
 
-        let res: Result<Option<&'r dyn PartialReflect>, AccessErrorKind> =
+        let res: Result<Option<&'r dyn Reflect>, AccessErrorKind> =
             match (self, base.reflect_ref()) {
                 (Self::FieldName(field), Struct(struct_ref)) => {
                     Ok(struct_ref.field(field.as_ref()))
@@ -180,14 +178,14 @@ impl<'a> Accessor<'a> {
     /// Dynamic Access Fields, If successful, return the mutable reference of the field.
     pub fn access_mut<'r>(
         &self,
-        base: &'r mut dyn PartialReflect,
+        base: &'r mut dyn Reflect,
         offset: Option<usize>, // use for error info
-    ) -> Result<&'r mut dyn PartialReflect, AccessError<'a>> {
+    ) -> Result<&'r mut dyn Reflect, AccessError<'a>> {
         use ReflectMut::*;
 
         let base_kind = base.reflect_kind();
 
-        let res: Result<Option<&'r mut dyn PartialReflect>, AccessErrorKind> = match (
+        let res: Result<Option<&'r mut dyn Reflect>, AccessErrorKind> = match (
             self,
             base.reflect_mut(),
         ) {
@@ -326,8 +324,8 @@ impl<'a> OffsetAccessor<'a> {
     #[inline]
     pub fn access<'r>(
         &self,
-        base: &'r dyn PartialReflect,
-    ) -> Result<&'r dyn PartialReflect, AccessError<'a>> {
+        base: &'r dyn Reflect,
+    ) -> Result<&'r dyn Reflect, AccessError<'a>> {
         self.accessor.access(base, self.offset)
     }
 
@@ -335,8 +333,8 @@ impl<'a> OffsetAccessor<'a> {
     #[inline]
     pub fn access_mut<'r>(
         &self,
-        base: &'r mut dyn PartialReflect,
-    ) -> Result<&'r mut dyn PartialReflect, AccessError<'a>> {
+        base: &'r mut dyn Reflect,
+    ) -> Result<&'r mut dyn Reflect, AccessError<'a>> {
         self.accessor.access_mut(base, self.offset)
     }
 }

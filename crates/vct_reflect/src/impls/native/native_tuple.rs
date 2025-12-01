@@ -1,8 +1,7 @@
 //! Implement reflection traits for tuples with a field count of 12 or less.
 //!
 //! - [`TypePath`] -> [`DynamicTypePath`]
-//! - [`Typed`] -> [`MaybeTyped`] + [`DynamicTyped`]
-//! - [`PartialReflect`]
+//! - [`Typed`] -> [`DynamicTyped`]
 //! - [`Tuple`]
 //! - [`Reflect`]
 //! - [`GetTypeTraits`]
@@ -13,9 +12,9 @@
 
 use core::fmt;
 use crate::{
-    FromReflect, PartialReflect, Reflect,
+    FromReflect, Reflect,
     cell::{GenericTypeInfoCell, GenericTypePathCell},
-    info::{MaybeTyped, ReflectKind, TupleInfo, TypeInfo, TypePath, Typed, UnnamedField},
+    info::{ReflectKind, TupleInfo, TypeInfo, TypePath, Typed, UnnamedField},
     ops::{
         ApplyError, ReflectCloneError, ReflectMut, ReflectOwned, ReflectRef, Tuple, TupleFieldIter,
         tuple_partial_eq, tuple_try_apply, tuple_debug,
@@ -83,19 +82,32 @@ range_invoke!(impl_type_path_tuple, 12);
 
 macro_rules! impl_reflect_tuple {
     ($num:literal : [$($index:tt : $name:ident),*]) => {
-        impl<$($name: Reflect + MaybeTyped + TypePath + GetTypeTraits),*> Tuple for ($($name,)*) {
+        impl<$($name: Reflect + Typed),*> Typed for ($($name,)*) {
+            fn type_info() -> &'static TypeInfo {
+                static CELL: GenericTypeInfoCell = GenericTypeInfoCell::new();
+                CELL.get_or_insert::<Self, _>(|| {
+                    let fields = [
+                        $(UnnamedField::new::<$name>($index),)*
+                    ];
+                    let info = TupleInfo::new::<Self>(&fields);
+                    TypeInfo::Tuple(info)
+                })
+            }
+        }
+
+        impl<$($name: Reflect + Typed),*> Tuple for ($($name,)*) {
             #[inline]
-            fn field(&self, index: usize) -> Option<&dyn PartialReflect> {
+            fn field(&self, index: usize) -> Option<&dyn Reflect> {
                 match index {
-                    $($index => Some(&self.$index as &dyn PartialReflect),)*
+                    $($index => Some(&self.$index as &dyn Reflect),)*
                     _ => None,
                 }
             }
 
             #[inline]
-            fn field_mut(&mut self, index: usize) -> Option<&mut dyn PartialReflect> {
+            fn field_mut(&mut self, index: usize) -> Option<&mut dyn Reflect> {
                 match index {
-                    $($index => Some(&mut self.$index as &mut dyn PartialReflect),)*
+                    $($index => Some(&mut self.$index as &mut dyn Reflect),)*
                     _ => None,
                 }
             }
@@ -111,47 +123,39 @@ macro_rules! impl_reflect_tuple {
             }
 
             #[inline]
-            fn drain(self: Box<Self>) -> Vec<Box<dyn PartialReflect>> {
+            fn drain(self: Box<Self>) -> Vec<Box<dyn Reflect>> {
                 vec![
                     $(Box::new(self.$index),)*
                 ]
             }
         }
 
-        impl<$($name: Reflect + MaybeTyped + TypePath + GetTypeTraits),*> PartialReflect for ($($name,)*) {
+
+        impl<$($name: Reflect + Typed),*> Reflect for ($($name,)*) {
             #[inline]
-            fn get_target_type_info(&self) -> Option<&'static TypeInfo> {
+            fn as_reflect(&self) -> &dyn Reflect {
+                self
+            }
+
+            #[inline]
+            fn as_reflect_mut(&mut self) -> &mut dyn Reflect {
+                self
+            }
+
+            #[inline]
+            fn into_reflect(self: Box<Self>) -> Box<dyn Reflect> {
+                self
+            }
+
+            #[inline]
+            fn set(&mut self, value: Box<dyn Reflect>) -> Result<(), Box<dyn Reflect>> {
+                *self = value.take()?;
+                Ok(())
+            }
+
+            #[inline]
+            fn represented_type_info(&self) -> Option<&'static TypeInfo> {
                 Some(<Self as Typed>::type_info())
-            }
-
-            #[inline]
-            fn as_partial_reflect(&self) -> &dyn PartialReflect {
-                self
-            }
-
-            #[inline]
-            fn as_partial_reflect_mut(&mut self) -> &mut dyn PartialReflect {
-                self
-            }
-
-            #[inline]
-            fn into_partial_reflect(self: Box<Self>) -> Box<dyn PartialReflect> {
-                self
-            }
-
-            #[inline]
-            fn try_as_reflect(&self) -> Option<&dyn Reflect> {
-                Some(self)
-            }
-
-            #[inline]
-            fn try_as_reflect_mut(&mut self) -> Option<&mut dyn Reflect> {
-                Some(self)
-            }
-
-            #[inline]
-            fn try_into_reflect(self: Box<Self>) -> Result<Box<dyn Reflect>, Box<dyn PartialReflect>> {
-                Ok(self)
             }
 
             #[inline]
@@ -175,12 +179,12 @@ macro_rules! impl_reflect_tuple {
             }
 
             #[inline]
-            fn try_apply(&mut self, value: &dyn PartialReflect) -> Result<(), ApplyError> {
+            fn try_apply(&mut self, value: &dyn Reflect) -> Result<(), ApplyError> {
                 tuple_try_apply(self, value)
             }
 
             #[inline]
-            fn reflect_partial_eq(&self, other: &dyn PartialReflect) -> Option<bool> {
+            fn reflect_partial_eq(&self, other: &dyn Reflect) -> Option<bool> {
                 tuple_partial_eq(self, other)
             }
 
@@ -202,43 +206,9 @@ macro_rules! impl_reflect_tuple {
             // Temporarily disable reflect_hash
         }
 
-        impl<$($name: Reflect + MaybeTyped + TypePath + GetTypeTraits),*> Reflect for ($($name,)*) {
-            #[inline]
-            fn as_reflect(&self) -> &dyn Reflect {
-                self
-            }
 
-            #[inline]
-            fn as_reflect_mut(&mut self) -> &mut dyn Reflect {
-                self
-            }
 
-            #[inline]
-            fn into_reflect(self: Box<Self>) -> Box<dyn Reflect> {
-                self
-            }
-
-            #[inline]
-            fn set(&mut self, value: Box<dyn Reflect>) -> Result<(), Box<dyn Reflect>> {
-                *self = value.take()?;
-                Ok(())
-            }
-        }
-
-        impl<$($name: Reflect + MaybeTyped + TypePath + GetTypeTraits),*> Typed for ($($name,)*) {
-            fn type_info() -> &'static TypeInfo {
-                static CELL: GenericTypeInfoCell = GenericTypeInfoCell::new();
-                CELL.get_or_insert::<Self, _>(|| {
-                    let fields = [
-                        $(UnnamedField::new::<$name>($index),)*
-                    ];
-                    let info = TupleInfo::new::<Self>(&fields);
-                    TypeInfo::Tuple(info)
-                })
-            }
-        }
-
-        impl<$($name: Reflect + MaybeTyped + TypePath + GetTypeTraits),*> GetTypeTraits for ($($name,)*) {
+        impl<$($name: Reflect + Typed + GetTypeTraits),*> GetTypeTraits for ($($name,)*) {
             fn get_type_traits() -> TypeTraits {
                 TypeTraits::of::<($($name,)*)>()
             }
@@ -248,8 +218,8 @@ macro_rules! impl_reflect_tuple {
             }
         }
 
-        impl<$($name: FromReflect + MaybeTyped + TypePath + GetTypeTraits),*> FromReflect for ($($name,)*) {
-            fn from_reflect(reflect: &dyn PartialReflect) -> Option<Self> {
+        impl<$($name: FromReflect + Typed),*> FromReflect for ($($name,)*) {
+            fn from_reflect(reflect: &dyn Reflect) -> Option<Self> {
                 let _ref_tuple = reflect.reflect_ref().as_tuple().ok()?;
 
                 Some((

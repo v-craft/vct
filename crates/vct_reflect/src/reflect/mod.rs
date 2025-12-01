@@ -9,9 +9,7 @@ pub fn reflect_hasher() -> DefaultHasher<'static> {
 
 mod reflect_impl;
 pub use reflect_impl::Reflect;
-
-mod partial_reflect;
-pub use partial_reflect::PartialReflect;
+pub(crate) use reflect_impl::impl_cast_reflect_fn;
 
 mod from_reflect;
 pub use from_reflect::FromReflect;

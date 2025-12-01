@@ -1,20 +1,27 @@
-use crate::{
-    PartialReflect, Reflect,
-    info::{ArrayInfo, MaybeTyped, ReflectKind, TypeInfo, TypePath},
-    ops::{ApplyError, ReflectMut, ReflectOwned, ReflectRef},
-    reflect_hasher,
-};
 use alloc::{boxed::Box, vec::Vec};
 use core::{
-    any::TypeId,
     fmt,
     hash::{Hash, Hasher},
 };
 
-// Not impl Default: The length of Array needs to be determined.
+use crate::{
+    Reflect, cell::NonGenericTypeInfoCell, 
+    info::{ArrayInfo, OpaqueInfo, ReflectKind, TypeInfo, TypePath, Typed}, 
+    ops::{ApplyError, ReflectMut, ReflectOwned, ReflectRef}, 
+    reflect::impl_cast_reflect_fn, reflect_hasher
+};
+
+
+/// Representing [`Array`]`, used to dynamically modify the type of data and information.
+/// 
+/// Dynamic types are special in that their TypeInfo is [`OpaqueInfo`], 
+/// but other APIs are consistent with the type they represent, such as [`reflect_kind`], [`reflect_ref`]
+/// 
+/// [`reflect_kind`]: crate::Reflect::reflect_kind
+/// [`reflect_ref`]: crate::Reflect::reflect_ref
 pub struct DynamicArray {
-    target_type: Option<&'static TypeInfo>,
-    values: Box<[Box<dyn PartialReflect>]>,
+    array_info: Option<&'static TypeInfo>, // Ensure it is None or ArrayInfo
+    values: Box<[Box<dyn Reflect>]>,
 }
 
 impl TypePath for DynamicArray {
@@ -40,84 +47,50 @@ impl TypePath for DynamicArray {
     }
 }
 
+impl Typed for DynamicArray {
+    fn type_info() -> &'static TypeInfo {
+        static CELL: NonGenericTypeInfoCell = NonGenericTypeInfoCell::new();
+        CELL.get_or_init(|| TypeInfo::Opaque(OpaqueInfo::new::<Self>()))
+    }
+}
+
 impl DynamicArray {
     /// Creates a new [`DynamicArray`].
     #[inline]
-    pub fn new(values: Box<[Box<dyn PartialReflect>]>) -> Self {
+    pub fn new(values: Box<[Box<dyn Reflect>]>) -> Self {
         Self {
-            target_type: None,
+            array_info: None,
             values,
         }
     }
 
     /// Sets the [`TypeInfo`] to be represented by this `DynamicArray`.
-    ///
-    /// # Panics
-    ///
-    /// Panics if the given [`TypeInfo`] is not a [`TypeInfo::Array`].
-    pub fn set_target_type_info(&mut self, target_type: Option<&'static TypeInfo>) {
-        if let Some(target_type) = target_type {
-            assert!(
-                matches!(target_type, TypeInfo::Array(_)),
-                "expected TypeInfo::Array but received: {target_type:?}"
-            );
+    /// 
+    /// # Panic
+    /// 
+    /// If the input is not array info or None.
+    #[inline]
+    pub fn set_type_info(&mut self, array_info: Option<&'static TypeInfo>) {
+        match array_info {
+            Some(TypeInfo::Array(_)) | None => {},
+            _ => { panic!("Call `DynamicArray::set_type_info`, but the input is not array information or None.") },
         }
-
-        self.target_type = target_type;
+        
+        self.array_info = array_info;
     }
 }
 
-impl PartialReflect for DynamicArray {
+impl Reflect for DynamicArray {
+    impl_cast_reflect_fn!();
+
     #[inline]
-    fn get_target_type_info(&self) -> Option<&'static TypeInfo> {
-        self.target_type
+    fn is_dynamic(&self) -> bool {
+        true
     }
 
     #[inline]
-    fn as_partial_reflect(&self) -> &dyn PartialReflect {
-        self
-    }
-
-    #[inline]
-    fn as_partial_reflect_mut(&mut self) -> &mut dyn PartialReflect {
-        self
-    }
-
-    #[inline]
-    fn into_partial_reflect(self: Box<Self>) -> Box<dyn PartialReflect> {
-        self
-    }
-
-    #[inline]
-    fn try_as_reflect(&self) -> Option<&dyn Reflect> {
-        None
-    }
-
-    #[inline]
-    fn try_as_reflect_mut(&mut self) -> Option<&mut dyn Reflect> {
-        None
-    }
-
-    #[inline]
-    fn try_into_reflect(self: Box<Self>) -> Result<Box<dyn Reflect>, Box<dyn PartialReflect>> {
-        Err(self)
-    }
-
-    fn try_apply(&mut self, value: &dyn PartialReflect) -> Result<(), ApplyError> {
-        let other = value.reflect_ref().as_array()?;
-
-        if self.len() != other.len() {
-            return Err(ApplyError::DifferentSize {
-                from_size: other.len(),
-                to_size: self.len(),
-            });
-        }
-
-        for (idx, other_item) in other.iter().enumerate() {
-            let item = self.get_mut(idx).unwrap();
-            item.try_apply(other_item)?;
-        }
-        Ok(())
+    fn represented_type_info(&self) -> Option<&'static TypeInfo> {
+        self.array_info
     }
 
     #[inline]
@@ -140,18 +113,18 @@ impl PartialReflect for DynamicArray {
         ReflectOwned::Array(self)
     }
 
-    fn reflect_hash(&self) -> Option<u64> {
-        let mut hasher = reflect_hasher();
-        TypeId::of::<Self>().hash(&mut hasher);
-        self.len().hash(&mut hasher);
-        for value in self.iter() {
-            hasher.write_u64(value.reflect_hash()?);
-        }
-        Some(hasher.finish())
+    #[inline]
+    fn try_apply(&mut self, value: &dyn Reflect) -> Result<(), ApplyError> {
+        array_try_apply(self, value)
     }
 
     #[inline]
-    fn reflect_partial_eq(&self, other: &dyn PartialReflect) -> Option<bool> {
+    fn reflect_hash(&self) -> Option<u64> {
+        array_hash(self)
+    }
+
+    #[inline]
+    fn reflect_partial_eq(&self, other: &dyn Reflect) -> Option<bool> {
         array_partial_eq(self, other)
     }
 
@@ -162,13 +135,9 @@ impl PartialReflect for DynamicArray {
         write!(f, ")")
     }
 
-    #[inline]
-    fn is_dynamic(&self) -> bool {
-        true
-    }
+    // `to_dynamic` needs to ensure that the new object is "completely dynamic" semantically, except for the Opaque type.
+    // Therefore, use the default implementation directly.
 }
-
-impl MaybeTyped for DynamicArray {}
 
 impl fmt::Debug for DynamicArray {
     #[inline]
@@ -177,26 +146,26 @@ impl fmt::Debug for DynamicArray {
     }
 }
 
-impl<T: PartialReflect> FromIterator<T> for DynamicArray {
+impl<T: Reflect> FromIterator<T> for DynamicArray {
     fn from_iter<I: IntoIterator<Item = T>>(values: I) -> Self {
-        values
-            .into_iter()
-            .map(|value| Box::new(value).into_partial_reflect())
-            .collect()
+        Self {
+            array_info: None,
+            values: values.into_iter().map(|value| Box::new(value).into_reflect()).collect(),
+        }
     }
 }
 
-impl FromIterator<Box<dyn PartialReflect>> for DynamicArray {
-    fn from_iter<I: IntoIterator<Item = Box<dyn PartialReflect>>>(values: I) -> Self {
+impl FromIterator<Box<dyn Reflect>> for DynamicArray {
+    fn from_iter<I: IntoIterator<Item = Box<dyn Reflect>>>(values: I) -> Self {
         Self {
-            target_type: None,
+            array_info: None,
             values: values.into_iter().collect::<Vec<_>>().into_boxed_slice(),
         }
     }
 }
 
 impl IntoIterator for DynamicArray {
-    type Item = Box<dyn PartialReflect>;
+    type Item = Box<dyn Reflect>;
     type IntoIter = alloc::vec::IntoIter<Self::Item>;
 
     fn into_iter(self) -> Self::IntoIter {
@@ -205,7 +174,7 @@ impl IntoIterator for DynamicArray {
 }
 
 impl<'a> IntoIterator for &'a DynamicArray {
-    type Item = &'a dyn PartialReflect;
+    type Item = &'a dyn Reflect;
     type IntoIter = ArrayItemIter<'a>;
 
     #[inline]
@@ -220,12 +189,12 @@ impl<'a> IntoIterator for &'a DynamicArray {
 /// but also to any fixed-size linear sequence types.
 /// It is expected that implementors of this trait uphold this contract
 /// and maintain a fixed size as returned by the [`Array::len`] method.
-pub trait Array: PartialReflect {
+pub trait Array: Reflect {
     /// Returns a reference to the element at `index`, or `None` if out of bounds.
-    fn get(&self, index: usize) -> Option<&dyn PartialReflect>;
+    fn get(&self, index: usize) -> Option<&dyn Reflect>;
 
     /// Returns a mutable reference to the element at `index`, or `None` if out of bounds.
-    fn get_mut(&mut self, index: usize) -> Option<&mut dyn PartialReflect>;
+    fn get_mut(&mut self, index: usize) -> Option<&mut dyn Reflect>;
 
     /// Returns the number of elements in the array.
     fn len(&self) -> usize;
@@ -240,20 +209,34 @@ pub trait Array: PartialReflect {
     fn iter(&self) -> ArrayItemIter<'_>;
 
     /// Drain the elements of this array to get a vector of owned values.
-    fn drain(self: Box<Self>) -> Vec<Box<dyn PartialReflect>>;
+    fn drain(self: Box<Self>) -> Vec<Box<dyn Reflect>>;
 
     /// Creates a new [`DynamicArray`] from this array.
     fn to_dynamic_array(&self) -> DynamicArray {
         DynamicArray {
-            target_type: self.get_target_type_info(),
-            values: self.iter().map(PartialReflect::to_dynamic).collect(),
+            array_info: self.represented_type_info(),
+            values: self.iter().map(Reflect::to_dynamic).collect(),
         }
     }
 
-    /// Will return `None` if [`TypeInfo`] is not available.
+    /// Get actual [`ArrayInfo`] of underlying types.
+    /// 
+    /// If it is a dynamic type, it will return `None`.
+    /// 
+    /// If it is not a dynamic type and the returned value is not `None` or `ArrayInfo`, it will panic.
+    /// (If you want to implement dynamic types yourself, please return None.)
     #[inline]
-    fn get_target_array_info(&self) -> Option<&'static ArrayInfo> {
-        self.get_target_type_info()?.as_array().ok()
+    fn reflect_array_info(&self) -> Option<&'static ArrayInfo> {
+        self.reflect_type_info().as_array().ok()
+    }
+
+    /// Get the [`ArrayInfo`] of representation.
+    /// 
+    /// Normal types return their own information,
+    /// while dynamic types return `None`` if they do not represent an object
+    #[inline]
+    fn represented_array_info(&self) -> Option<&'static ArrayInfo> {
+        self.represented_type_info()?.as_array().ok()
     }
 }
 
@@ -271,7 +254,7 @@ impl ArrayItemIter<'_> {
 }
 
 impl<'a> Iterator for ArrayItemIter<'a> {
-    type Item = &'a dyn PartialReflect;
+    type Item = &'a dyn Reflect;
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
@@ -291,12 +274,12 @@ impl<'a> ExactSizeIterator for ArrayItemIter<'a> {}
 
 impl Array for DynamicArray {
     #[inline]
-    fn get(&self, index: usize) -> Option<&dyn PartialReflect> {
+    fn get(&self, index: usize) -> Option<&dyn Reflect> {
         self.values.get(index).map(|value| &**value)
     }
 
     #[inline]
-    fn get_mut(&mut self, index: usize) -> Option<&mut dyn PartialReflect> {
+    fn get_mut(&mut self, index: usize) -> Option<&mut dyn Reflect> {
         self.values.get_mut(index).map(|value| &mut **value)
     }
 
@@ -311,16 +294,50 @@ impl Array for DynamicArray {
     }
 
     #[inline]
-    fn drain(self: Box<Self>) -> Vec<Box<dyn PartialReflect>> {
+    fn drain(self: Box<Self>) -> Vec<Box<dyn Reflect>> {
         self.values.into_vec()
     }
+
+    #[inline]
+    fn reflect_array_info(&self) -> Option<&'static ArrayInfo> {
+        None
+    }
+
+    #[inline]
+    fn represented_array_info(&self) -> Option<&'static ArrayInfo> {
+        self.array_info?.as_array().ok()
+    }
+
+    // `to_dynamic` needs to ensure that the new object is "completely dynamic" semantically, except for the Opaque type.
+    // Therefore, use the default implementation directly.
+}
+
+/// A function used to assist in the implementation of `reflect_try_apply`
+///
+/// Avoid compilation overhead when implementing multiple types.
+#[inline(never)]
+pub fn array_try_apply(x: &mut dyn Array, y: &dyn Reflect) ->Result<(), ApplyError> {
+    let y = y.reflect_ref().as_array()?;
+
+    if x.len() != y.len() {
+        return Err(ApplyError::DifferentSize {
+            from_size: y.len(),
+            to_size: x.len(),
+        });
+    }
+
+    for (idx, y_item) in y.iter().enumerate() {
+        let item = x.get_mut(idx).unwrap();
+        item.try_apply(y_item)?;
+    }
+    Ok(())
 }
 
 /// A function used to assist in the implementation of `reflect_partial_eq`
 ///
 /// Avoid compilation overhead when implementing multiple types.
 #[inline(never)]
-pub fn array_partial_eq(x: &dyn Array, y: &dyn PartialReflect) -> Option<bool> {
+pub fn array_partial_eq(x: &dyn Array, y: &dyn Reflect) -> Option<bool> {
     let ReflectRef::Array(y) = y.reflect_ref() else {
         return Some(false);
     };
@@ -339,12 +356,26 @@ pub fn array_partial_eq(x: &dyn Array, y: &dyn PartialReflect) -> Option<bool> {
     Some(true)
 }
 
-/// The default debug formatter for [`Array`] types.
-/// 
+/// A function used to assist in the implementation of `reflect_hash`
+///
+/// Avoid compilation overhead when implementing multiple types.
+#[inline(never)]
+pub fn array_hash(x: &dyn Array) -> Option<u64> {
+    let mut hasher = reflect_hasher();
+    x.type_id().hash(&mut hasher);
+    x.len().hash(&mut hasher);
+    for value in x.iter() {
+        hasher.write_u64(value.reflect_hash()?);
+    }
+    Some(hasher.finish())
+}
+
+/// A function used to assist in the implementation of `reflect_debug`
+///
 /// Avoid compilation overhead when implementing multiple types.
 #[inline(never)]
 pub(crate) fn array_debug(dyn_array: &dyn Array, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-    // This function should only be used to impl `PartialReflect::debug`
+    // This function should only be used to impl `Reflect::debug`
     // Non Inline: only be compiled once -> reduce compilation times
     let mut debug = f.debug_list();
     for item in dyn_array.iter() {

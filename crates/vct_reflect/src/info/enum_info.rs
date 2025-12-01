@@ -1,3 +1,7 @@
+use alloc::{boxed::Box, format, string::String};
+use vct_os::sync::Arc;
+use vct_utils::collections::HashMap;
+
 use crate::{
     info::{
         CustomAttributes, Generics, Type, TypePath, VariantInfo,
@@ -8,9 +12,6 @@ use crate::{
     },
     ops::Enum,
 };
-use alloc::{boxed::Box, format, string::String};
-use vct_os::sync::Arc;
-use vct_utils::collections::HashMap;
 
 /// Container for storing compile-time enum information
 #[derive(Clone, Debug)]
@@ -26,14 +27,14 @@ pub struct EnumInfo {
 }
 
 impl EnumInfo {
-    impl_docs_fn!(docs);
     impl_type_fn!(ty);
+    impl_docs_fn!(docs);
     impl_generic_fn!(generics);
     impl_custom_attributes_fn!(custom_attributes);
     impl_with_custom_attributes!(custom_attributes);
 
     /// Create new container
-    pub fn new<TEnum: TypePath + Enum>(variants: &[VariantInfo]) -> Self {
+    pub fn new<TEnum: Enum + TypePath>(variants: &[VariantInfo]) -> Self {
         let variant_indices = variants
             .iter()
             .enumerate()

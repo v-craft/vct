@@ -38,6 +38,8 @@ pub trait TypePath: 'static {
 }
 
 /// Dynamic dispatch for [`TypePath`].
+/// 
+/// This trait is automatically implemented for types that implement [`TypePath`].
 pub trait DynamicTypePath {
     /// See [`TypePath::type_path`].
     fn reflect_type_path(&self) -> &str;

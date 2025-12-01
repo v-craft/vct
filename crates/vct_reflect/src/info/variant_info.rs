@@ -1,12 +1,13 @@
+use alloc::boxed::Box;
+use core::{error, fmt};
+use vct_os::sync::Arc;
+use vct_utils::collections::HashMap;
+
 use crate::info::{
     CustomAttributes, NamedField, UnnamedField,
     attributes::{impl_custom_attributes_fn, impl_with_custom_attributes},
     docs_macro::impl_docs_fn,
 };
-use alloc::boxed::Box;
-use core::{error, fmt};
-use vct_os::sync::Arc;
-use vct_utils::collections::HashMap;
 
 /// Describes the form of an enum variant.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
@@ -60,10 +61,10 @@ impl fmt::Display for VariantKind {
 /// ```
 #[derive(Clone, Debug)]
 pub struct StructVariantInfo {
+    name: &'static str,
     fields: Box<[NamedField]>,
     field_names: Box<[&'static str]>,
     field_indices: HashMap<&'static str, usize>,
-    name: &'static str,
     custom_attributes: Option<Arc<CustomAttributes>>,
     #[cfg(feature = "reflect_docs")]
     docs: Option<&'static str>,
@@ -149,8 +150,8 @@ impl StructVariantInfo {
 /// ```
 #[derive(Clone, Debug)]
 pub struct TupleVariantInfo {
-    fields: Box<[UnnamedField]>,
     name: &'static str,
+    fields: Box<[UnnamedField]>,
     custom_attributes: Option<Arc<CustomAttributes>>,
     #[cfg(feature = "reflect_docs")]
     docs: Option<&'static str>,
@@ -250,7 +251,7 @@ impl fmt::Display for VariantKindError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "variant type mismatch: expected {:?}, received {:?}",
+            "variant kind mismatch: expected {:?}, received {:?}",
             self.expected, self.received
         )
     }

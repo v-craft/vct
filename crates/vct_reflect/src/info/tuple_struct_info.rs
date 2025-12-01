@@ -1,3 +1,6 @@
+use alloc::boxed::Box;
+use vct_os::sync::Arc;
+
 use crate::{
     info::{
         CustomAttributes, Generics, Type, TypePath, UnnamedField,
@@ -8,8 +11,6 @@ use crate::{
     },
     ops::TupleStruct,
 };
-use alloc::boxed::Box;
-use vct_os::sync::Arc;
 
 /// Container for storing compile-time tuple_struct information
 #[derive(Clone, Debug)]
@@ -33,7 +34,7 @@ impl TupleStructInfo {
     ///
     /// The order of fields inside the container is fixed
     #[inline]
-    pub fn new<T: TypePath + TupleStruct>(fields: &[UnnamedField]) -> Self {
+    pub fn new<T: TupleStruct + TypePath>(fields: &[UnnamedField]) -> Self {
         Self {
             ty: Type::of::<T>(),
             generics: Generics::new(),

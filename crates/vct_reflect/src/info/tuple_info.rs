@@ -1,11 +1,12 @@
+use alloc::boxed::Box;
+use vct_os::sync::Arc;
+
 use crate::{
     info::{
-        Generics, Type, TypePath, UnnamedField, docs_macro::impl_docs_fn,
-        generics::impl_generic_fn, type_struct::impl_type_fn,
+        CustomAttributes, Generics, Type, TypePath, UnnamedField, attributes::{impl_custom_attributes_fn, impl_with_custom_attributes}, docs_macro::impl_docs_fn, generics::impl_generic_fn, type_struct::impl_type_fn
     },
     ops::Tuple,
 };
-use alloc::boxed::Box;
 
 /// Container for storing compile-time tuple information
 #[derive(Clone, Debug)]
@@ -13,6 +14,7 @@ pub struct TupleInfo {
     ty: Type,
     generics: Generics,
     fields: Box<[UnnamedField]>,
+    custom_attributes: Option<Arc<CustomAttributes>>,
     #[cfg(feature = "reflect_docs")]
     docs: Option<&'static str>,
 }
@@ -21,18 +23,22 @@ impl TupleInfo {
     impl_docs_fn!(docs);
     impl_type_fn!(ty);
     impl_generic_fn!(generics);
+    impl_custom_attributes_fn!(custom_attributes);
+    impl_with_custom_attributes!(custom_attributes);
 
     /// Create a new container
     ///
     /// The order of fields inside the container is fixed
     /// 
-    /// During tuple implementation, there may be a large number of generic expansions, and inlining is prohibited here.
+    /// During tuple implementation, there may be a large number of generic expansions.
+    /// So inlining is prohibited here.
     #[inline(never)]
-    pub fn new<T: TypePath + Tuple>(fields: &[UnnamedField]) -> Self {
+    pub fn new<T: Tuple + TypePath>(fields: &[UnnamedField]) -> Self {
         Self {
             ty: Type::of::<T>(),
             generics: Generics::new(),
             fields: fields.to_vec().into_boxed_slice(),
+            custom_attributes: None,
             #[cfg(feature = "reflect_docs")]
             docs: None,
         }

@@ -1,3 +1,5 @@
+use vct_os::sync::Arc;
+
 use crate::{
     Reflect,
     info::{
@@ -6,7 +8,6 @@ use crate::{
         attributes::{impl_custom_attributes_fn, impl_with_custom_attributes}
     },
 };
-use vct_os::sync::Arc;
 
 /// Container for storing compile-time type information
 ///

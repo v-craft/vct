@@ -1,12 +1,9 @@
 
-use core::{fmt, any::{Any, TypeId}};
-use alloc::{
-    boxed::Box, format,
-    string::{String, ToString}
-};
+use core::{fmt, any::TypeId};
+use alloc::boxed::Box;
 
 use crate::{
-    Reflect, PartialReflect, FromReflect,
+    Reflect, FromReflect,
     info::{TypePath, Typed, TypeInfo, OpaqueInfo, ReflectKind},
     cell::NonGenericTypeInfoCell,
     ops::{ApplyError, ReflectRef, ReflectMut, ReflectOwned, ReflectCloneError},
@@ -34,77 +31,31 @@ macro_rules! impl_native_number {
             }
         }
 
-        impl PartialReflect for $name {
+        impl Reflect for $name {
             #[inline]
-            fn get_target_type_info(&self) -> Option<&'static TypeInfo> {
+            fn as_reflect(&self) -> &dyn Reflect {
+                self
+            }
+
+            #[inline]
+            fn as_reflect_mut(&mut self) -> &mut dyn Reflect {
+                self
+            }
+
+            #[inline]
+            fn into_reflect(self: Box<Self>) -> Box<dyn Reflect> {
+                self
+            }
+
+            #[inline]
+            fn set(&mut self, value: Box<dyn Reflect>) -> Result<(), Box<dyn Reflect>> {
+                *self = value.take()?;
+                Ok(())
+            }
+
+            #[inline]
+            fn represented_type_info(&self) -> Option<&'static TypeInfo> {
                 Some(<Self as Typed>::type_info())
-            }
-
-            #[inline]
-            fn as_partial_reflect(&self) -> &dyn PartialReflect {
-                self
-            }
-
-            #[inline]
-            fn as_partial_reflect_mut(&mut self) -> &mut dyn PartialReflect {
-                self
-            }
-
-            #[inline]
-            fn into_partial_reflect(self: Box<Self>) -> Box<dyn PartialReflect> {
-                self
-            }
-
-            #[inline]
-            fn try_as_reflect(&self) -> Option<&dyn Reflect> {
-                Some(self)
-            }
-
-            #[inline]
-            fn try_as_reflect_mut(&mut self) -> Option<&mut dyn Reflect> {
-                Some(self)
-            }
-
-            #[inline]
-            fn try_into_reflect(self: Box<Self>) -> Result<Box<dyn Reflect>, Box<dyn PartialReflect>> {
-                Ok(self)
-            }
-
-            fn try_apply(&mut self, value: &dyn PartialReflect) -> Result<(), ApplyError> {
-                todo!()
-                // let id = value.type_id();
-                // if TypeId::of::<$name>() == id {
-                //     // TODO: Replace to downcast_ref_uncheck
-                //     *self = *<dyn Any>::downcast_ref::<$name>(value).unwrap();
-                // } else if TypeId::of::<u8> == id {
-                //     *self = (*<dyn Any>::downcast_ref::<u8>(value)).unwrap() as $name;
-                // } else if TypeId::of::<i8> == id {
-
-                // }
-
-                // let kind = value.reflect_kind();
-                // if kind != ReflectKind::Opaque {
-                //     return Err(ApplyError::MismatchedKinds{
-                //         from_kind: kind,
-                //         to_kind: ReflectKind::Opaque,
-                //     });
-                // }
-
-                // let from_type: Box<str> = {
-                //     match value.get_target_type_info() {
-                //         Some(info) => {
-                //             info.type_path().into()
-                //         },
-                //         None => {
-                //             format!("UnknownType::{}", kind).into_boxed_str()
-                //         }
-                //     }
-                // };
-
-                // Err(ApplyError::MismatchedTypes {
-                //     from_type,
-                //     to_type: $str_name.into(),
-                // })
             }
 
             #[inline]
@@ -128,13 +79,62 @@ macro_rules! impl_native_number {
             }
 
             #[inline]
-            fn to_dynamic(&self) -> Box<dyn PartialReflect> {
+            fn to_dynamic(&self) -> Box<dyn Reflect> {
                 // Do not use default impl: faster
                 Box::new(*self)
             }
 
-            fn reflect_partial_eq(&self, other: &dyn PartialReflect) -> Option<bool> {
-                match other.try_downcast_ref::<$name>() {
+            fn try_apply(&mut self, value: &dyn Reflect) -> Result<(), ApplyError> {
+                let id = value.type_id();
+                if TypeId::of::<$name>() == id {
+                    // TODO: Replace to downcast_ref_uncheck
+                    *self = *value.downcast_ref::<$name>().unwrap();
+                } else if TypeId::of::<u8>() == id {
+                    *self = *value.downcast_ref::<u8>().unwrap() as $name;
+                } else if TypeId::of::<i8>() == id {
+                    *self = *value.downcast_ref::<i8>().unwrap() as $name;
+                } else if TypeId::of::<u16>() == id {
+                    *self = *value.downcast_ref::<u16>().unwrap() as $name;
+                } else if TypeId::of::<i16>() == id {
+                    *self = *value.downcast_ref::<i16>().unwrap() as $name;
+                } else if TypeId::of::<u32>() == id {
+                    *self = *value.downcast_ref::<u32>().unwrap() as $name;
+                } else if TypeId::of::<i32>() == id {
+                    *self = *value.downcast_ref::<i32>().unwrap() as $name;
+                } else if TypeId::of::<u64>() == id {
+                    *self = *value.downcast_ref::<u64>().unwrap() as $name;
+                } else if TypeId::of::<i64>() == id {
+                    *self = *value.downcast_ref::<i64>().unwrap() as $name;
+                } else if TypeId::of::<u128>() == id {
+                    *self = *value.downcast_ref::<u128>().unwrap() as $name;
+                } else if TypeId::of::<i128>() == id {
+                    *self = *value.downcast_ref::<i128>().unwrap() as $name;
+                } else if TypeId::of::<f32>() == id {
+                    *self = *value.downcast_ref::<f32>().unwrap() as $name;
+                } else if TypeId::of::<f64>() == id {
+                    *self = *value.downcast_ref::<f64>().unwrap() as $name;
+                } else if TypeId::of::<isize>() == id {
+                    *self = *value.downcast_ref::<isize>().unwrap() as $name;
+                } else if TypeId::of::<usize>() == id {
+                    *self = *value.downcast_ref::<usize>().unwrap() as $name;
+                }
+
+                let kind = value.reflect_kind();
+                if kind != ReflectKind::Opaque {
+                    return Err(ApplyError::MismatchedKinds{
+                        from_kind: kind,
+                        to_kind: ReflectKind::Opaque,
+                    });
+                }
+
+                Err(ApplyError::MismatchedTypes {
+                    from_type: value.reflect_type_info().type_path().into(),
+                    to_type: $str_name.into(),
+                })
+            }
+
+            fn reflect_partial_eq(&self, other: &dyn Reflect) -> Option<bool> {
+                match other.downcast_ref::<$name>() {
                     Some(val) => {
                         Some(PartialEq::eq(self, val))
                     },
@@ -154,29 +154,6 @@ macro_rules! impl_native_number {
             }
         }
 
-        impl Reflect for $name {
-            #[inline]
-            fn as_reflect(&self) -> &dyn Reflect {
-                self
-            }
-
-            #[inline]
-            fn as_reflect_mut(&mut self) -> &mut dyn Reflect {
-                self
-            }
-
-            #[inline]
-            fn into_reflect(self: Box<Self>) -> Box<dyn Reflect> {
-                self
-            }
-
-            #[inline]
-            fn set(&mut self, value: Box<dyn Reflect>) -> Result<(), Box<dyn Reflect>> {
-                *self = value.take()?;
-                Ok(())
-            }
-        }
-
         impl GetTypeTraits for $name {
             #[inline]
             fn get_type_traits() -> TypeTraits {
@@ -188,8 +165,42 @@ macro_rules! impl_native_number {
         }
 
         impl FromReflect for $name {
-            fn from_reflect(other: &dyn PartialReflect) -> Option<Self> {
-                todo!()
+            fn from_reflect(value: &dyn Reflect) -> Option<Self> {
+                let id = value.type_id();
+                if TypeId::of::<$name>() == id {
+                    // TODO: Replace to downcast_ref_uncheck
+                    Some(*value.downcast_ref::<$name>().unwrap())
+                } else if TypeId::of::<u8>() == id {
+                    Some(*value.downcast_ref::<u8>().unwrap() as Self)
+                } else if TypeId::of::<i8>() == id {
+                    Some(*value.downcast_ref::<i8>().unwrap() as Self)
+                } else if TypeId::of::<u16>() == id {
+                    Some(*value.downcast_ref::<u16>().unwrap() as Self)
+                } else if TypeId::of::<i16>() == id {
+                    Some(*value.downcast_ref::<i16>().unwrap() as Self)
+                } else if TypeId::of::<u32>() == id {
+                    Some(*value.downcast_ref::<u32>().unwrap() as Self)
+                } else if TypeId::of::<i32>() == id {
+                    Some(*value.downcast_ref::<i32>().unwrap() as Self)
+                } else if TypeId::of::<u64>() == id {
+                    Some(*value.downcast_ref::<u64>().unwrap() as Self)
+                } else if TypeId::of::<i64>() == id {
+                    Some(*value.downcast_ref::<i64>().unwrap() as Self)
+                } else if TypeId::of::<u128>() == id {
+                    Some(*value.downcast_ref::<u128>().unwrap() as Self)
+                } else if TypeId::of::<i128>() == id {
+                    Some(*value.downcast_ref::<i128>().unwrap() as Self)
+                } else if TypeId::of::<f32>() == id {
+                    Some(*value.downcast_ref::<f32>().unwrap() as Self)
+                } else if TypeId::of::<f64>() == id {
+                    Some(*value.downcast_ref::<f64>().unwrap() as Self)
+                } else if TypeId::of::<isize>() == id {
+                    Some(*value.downcast_ref::<isize>().unwrap() as Self)
+                } else if TypeId::of::<usize>() == id {
+                    Some(*value.downcast_ref::<usize>().unwrap() as Self)
+                } else {
+                    None
+                }
             }
         }
     };
@@ -198,7 +209,16 @@ macro_rules! impl_native_number {
 
 
 impl_native_number!(u8, "u8");
-
-
-
-
+impl_native_number!(i8, "i8");
+impl_native_number!(u16, "u16");
+impl_native_number!(i16, "i16");
+impl_native_number!(u32, "u32");
+impl_native_number!(i32, "i32");
+impl_native_number!(u64, "u64");
+impl_native_number!(i64, "i64");
+impl_native_number!(u128, "u128");
+impl_native_number!(i128, "i128");
+impl_native_number!(f32, "f32");
+impl_native_number!(f64, "f64");
+impl_native_number!(usize, "usize");
+impl_native_number!(isize, "isize");

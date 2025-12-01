@@ -13,7 +13,7 @@ pub mod registry;
 
 mod reflect;
 pub use reflect::{
-    FromReflect, PartialReflect, Reflect, ReflectAlias, Reflectable, reflect_hasher,
+    FromReflect, Reflect, ReflectAlias, Reflectable, reflect_hasher,
 };
 
 mod impls;
