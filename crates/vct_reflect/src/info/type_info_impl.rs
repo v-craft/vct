@@ -1,6 +1,6 @@
 use crate::info::{
     ArrayInfo, EnumInfo, ListInfo, MapInfo, OpaqueInfo, SetInfo, StructInfo, TupleInfo,
-    TupleStructInfo, Type, TypePathTable, generics::impl_generic_fn,
+    TupleStructInfo, CustomAttributes, Type, TypePathTable, generics::impl_generic_fn,
 };
 use core::{
     any::{Any, TypeId},
@@ -47,7 +47,7 @@ impl fmt::Display for ReflectKindError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "kind mismatch: expected {:?}, received {:?}",
+            "reflect kind mismatch: expected {}, received {}",
             self.expected, self.received
         )
     }
@@ -160,6 +160,17 @@ impl TypeInfo {
             Self::Set(_) => ReflectKind::Set,
             Self::Enum(_) => ReflectKind::Enum,
             Self::Opaque(_) => ReflectKind::Opaque,
+        }
+    }
+
+    #[inline]
+    pub fn custom_attributes(&self) -> Option<&CustomAttributes> {
+        match self {
+            Self::Struct(info) => info.custom_attributes(),
+            Self::TupleStruct(info) => info.custom_attributes(),
+            Self::Enum(info) => info.custom_attributes(),
+            Self::Opaque(info) => info.custom_attributes(),
+            _ => None,
         }
     }
 

@@ -164,13 +164,13 @@ impl PartialReflect for DynamicSet {
         ReflectOwned::Set(self)
     }
 
+    #[inline]
     fn reflect_partial_eq(&self, other: &dyn PartialReflect) -> Option<bool> {
-        // Not Inline: `set_partial_eq()` is inline always
         set_partial_eq(self, other)
     }
 
     #[inline]
-    fn debug(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn reflect_debug(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "DynamicSet(")?;
         set_debug(self, f)?;
         write!(f, ")")
@@ -187,7 +187,7 @@ impl MaybeTyped for DynamicSet {}
 impl fmt::Debug for DynamicSet {
     #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        self.debug(f)
+        self.reflect_debug(f)
     }
 }
 
@@ -382,12 +382,9 @@ impl Set for DynamicSet {
 
 /// A function used to assist in the implementation of `reflect_partial_eq`
 ///
-/// It's `inline(always)`, Usually recommended only for impl `reflect_partial_eq`.
-#[inline(always)]
-pub fn set_partial_eq<M: Set>(x: &M, y: &dyn PartialReflect) -> Option<bool> {
-    // Inline: this function **should only** be used to impl `PartialReflect::reflect_partial_eq`
-    // Compilation times is related to the quantity of type A.
-    // Therefore, inline has no negative effects.
+/// Avoid compilation overhead when implementing multiple types.
+#[inline(never)]
+pub fn set_partial_eq(x: &dyn Set, y: &dyn PartialReflect) -> Option<bool> {
     let ReflectRef::Set(y) = y.reflect_ref() else {
         return Some(false);
     };
@@ -409,7 +406,10 @@ pub fn set_partial_eq<M: Set>(x: &M, y: &dyn PartialReflect) -> Option<bool> {
 }
 
 /// The default debug formatter for [`Set`] types.
-pub fn set_debug(dyn_set: &dyn Set, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+/// 
+/// Avoid compilation overhead when implementing multiple types.
+#[inline(never)]
+pub(crate) fn set_debug(dyn_set: &dyn Set, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     // This function should only be used to impl `PartialReflect::debug`
     // Non Inline: only be compiled once -> reduce compilation times
     let mut debug = f.debug_set();

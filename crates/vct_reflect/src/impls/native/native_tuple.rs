@@ -11,18 +11,20 @@
 //! [`DynamicTypePath`]: crate::info::DynamicTypePath
 //! [`DynamicTyped`]: crate::info::DynamicTyped
 
+use core::fmt;
 use crate::{
     FromReflect, PartialReflect, Reflect,
     cell::{GenericTypeInfoCell, GenericTypePathCell},
     info::{MaybeTyped, ReflectKind, TupleInfo, TypeInfo, TypePath, Typed, UnnamedField},
     ops::{
         ApplyError, ReflectCloneError, ReflectMut, ReflectOwned, ReflectRef, Tuple, TupleFieldIter,
-        tuple_partial_eq, tuple_try_apply,
+        tuple_partial_eq, tuple_try_apply, tuple_debug,
     },
     registry::{GetTypeTraits, TypeRegistry, TypeTraits},
+    impls::concat,
 };
 use alloc::{boxed::Box, vec, vec::Vec};
-use vct_utils::{range_invoke, temp::concat};
+use vct_utils::range_invoke;
 
 macro_rules! impl_type_path_tuple {
     (0: []) => {
@@ -172,13 +174,13 @@ macro_rules! impl_reflect_tuple {
                 ReflectOwned::Tuple(self)
             }
 
+            #[inline]
             fn try_apply(&mut self, value: &dyn PartialReflect) -> Result<(), ApplyError> {
-                // Not Inline: `tuple_try_apply` is inline always
                 tuple_try_apply(self, value)
             }
 
+            #[inline]
             fn reflect_partial_eq(&self, other: &dyn PartialReflect) -> Option<bool> {
-                // Not Inline: `tuple_partial_eq` is inline always
                 tuple_partial_eq(self, other)
             }
 
@@ -191,6 +193,13 @@ macro_rules! impl_reflect_tuple {
                     )*
                 )))
             }
+        
+            #[inline]
+            fn reflect_debug(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+                tuple_debug(self, f)
+            }
+
+            // Temporarily disable reflect_hash
         }
 
         impl<$($name: Reflect + MaybeTyped + TypePath + GetTypeTraits),*> Reflect for ($($name,)*) {

@@ -1,6 +1,6 @@
 /// How the macro was invoked.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub(crate) enum ReflectSourceImplKind {
+pub(crate) enum ImplSourceKind {
     /// Using `impl_reflect!`.
     ImplAliasType,
     /// Using `#[derive(...)]`.
@@ -11,7 +11,7 @@ pub(crate) enum ReflectSourceImplKind {
 
 /// Which trait the macro explicitly implements.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub(crate) enum ReflectTraitImplKind {
+pub(crate) enum ImplTraitKind {
     Reflect,
     FromReflect,
     TypePath,
@@ -20,7 +20,7 @@ pub(crate) enum ReflectTraitImplKind {
 /// The provenance of a macro invocation.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub(crate) struct ReflectProvenance {
-    pub source: ReflectSourceImplKind,
-    pub trait_: ReflectTraitImplKind,
+    pub source: ImplSourceKind,
+    pub trait_: ImplTraitKind,
 }
 

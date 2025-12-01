@@ -146,13 +146,13 @@ impl PartialReflect for DynamicTupleStruct {
         ReflectOwned::TupleStruct(self)
     }
 
+    #[inline]
     fn reflect_partial_eq(&self, other: &dyn PartialReflect) -> Option<bool> {
-        // Not Inline: `tuple_struct_partial_eq()` is inline always
         tuple_struct_partial_eq(self, other)
     }
 
     #[inline]
-    fn debug(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn reflect_debug(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "DynamicTupleStruct(")?;
         tuple_struct_debug(self, f)?;
         write!(f, ")")
@@ -169,7 +169,7 @@ impl MaybeTyped for DynamicTupleStruct {}
 impl fmt::Debug for DynamicTupleStruct {
     #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        self.debug(f)
+        self.reflect_debug(f)
     }
 }
 
@@ -331,15 +331,9 @@ impl GetTupleStructField for dyn TupleStruct {
 
 /// A function used to assist in the implementation of `reflect_partial_eq`
 ///
-/// It's `inline(always)`, Usually recommended only for impl `reflect_partial_eq`.
-#[inline(always)]
-pub fn tuple_struct_partial_eq<S: TupleStruct + ?Sized>(
-    x: &S,
-    y: &dyn PartialReflect,
-) -> Option<bool> {
-    // Inline: this function **should only** be used to impl `PartialReflect::reflect_partial_eq`
-    // Compilation times is related to the quantity of type A.
-    // Therefore, inline has no negative effects.
+/// Avoid compilation overhead when implementing multiple types.
+#[inline(never)]
+pub fn tuple_struct_partial_eq(x: &dyn TupleStruct, y: &dyn PartialReflect) -> Option<bool> {
     let ReflectRef::TupleStruct(y) = y.reflect_ref() else {
         return Some(false);
     };
@@ -363,7 +357,10 @@ pub fn tuple_struct_partial_eq<S: TupleStruct + ?Sized>(
 }
 
 /// The default debug formatter for [`Tuple`] types.
-pub fn tuple_struct_debug(
+/// 
+/// Avoid compilation overhead when implementing multiple types.
+#[inline(never)]
+pub(crate) fn tuple_struct_debug(
     dyn_tuple_struct: &dyn TupleStruct,
     f: &mut fmt::Formatter<'_>,
 ) -> fmt::Result {

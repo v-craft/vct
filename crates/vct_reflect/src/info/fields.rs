@@ -14,7 +14,7 @@ pub struct NamedField {
     ty: Type,
     name: &'static str,
     type_info: fn() -> Option<&'static TypeInfo>,
-    custom_attributes: Arc<CustomAttributes>,
+    custom_attributes: Option<Arc<CustomAttributes>>,
     #[cfg(feature = "reflect_docs")]
     docs: Option<&'static str>,
 }
@@ -32,7 +32,7 @@ impl NamedField {
             name,
             type_info: T::maybe_type_info,
             ty: Type::of::<T>(),
-            custom_attributes: Arc::new(CustomAttributes::default()),
+            custom_attributes: None,
             #[cfg(feature = "reflect_docs")]
             docs: None,
         }
@@ -57,7 +57,7 @@ pub struct UnnamedField {
     ty: Type,
     index: usize,
     type_info: fn() -> Option<&'static TypeInfo>,
-    custom_attributes: Arc<CustomAttributes>,
+    custom_attributes: Option<Arc<CustomAttributes>>,
     #[cfg(feature = "reflect_docs")]
     docs: Option<&'static str>,
 }
@@ -75,7 +75,7 @@ impl UnnamedField {
             index,
             type_info: T::maybe_type_info,
             ty: Type::of::<T>(),
-            custom_attributes: Arc::new(CustomAttributes::default()),
+            custom_attributes: None,
             #[cfg(feature = "reflect_docs")]
             docs: None,
         }

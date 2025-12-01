@@ -17,7 +17,7 @@ pub struct TupleStructInfo {
     ty: Type,
     generics: Generics,
     fields: Box<[UnnamedField]>,
-    custom_attributes: Arc<CustomAttributes>,
+    custom_attributes: Option<Arc<CustomAttributes>>,
     #[cfg(feature = "reflect_docs")]
     docs: Option<&'static str>,
 }
@@ -38,7 +38,7 @@ impl TupleStructInfo {
             ty: Type::of::<T>(),
             generics: Generics::new(),
             fields: fields.to_vec().into_boxed_slice(),
-            custom_attributes: Arc::new(CustomAttributes::default()),
+            custom_attributes: None,
             #[cfg(feature = "reflect_docs")]
             docs: None,
         }

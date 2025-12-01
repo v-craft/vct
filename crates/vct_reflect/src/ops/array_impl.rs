@@ -150,13 +150,13 @@ impl PartialReflect for DynamicArray {
         Some(hasher.finish())
     }
 
+    #[inline]
     fn reflect_partial_eq(&self, other: &dyn PartialReflect) -> Option<bool> {
-        // Not Inline: `array_partial_eq()` is inline always
         array_partial_eq(self, other)
     }
 
     #[inline]
-    fn debug(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn reflect_debug(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "DynamicArray(")?;
         array_debug(self, f)?;
         write!(f, ")")
@@ -173,7 +173,7 @@ impl MaybeTyped for DynamicArray {}
 impl fmt::Debug for DynamicArray {
     #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        self.debug(f)
+        self.reflect_debug(f)
     }
 }
 
@@ -318,12 +318,9 @@ impl Array for DynamicArray {
 
 /// A function used to assist in the implementation of `reflect_partial_eq`
 ///
-/// It's `inline(always)`, Usually recommended only for impl `reflect_partial_eq`.
-#[inline(always)]
-pub fn array_partial_eq<A: Array + ?Sized>(x: &A, y: &dyn PartialReflect) -> Option<bool> {
-    // Inline: this function **should only** be used to impl `PartialReflect::reflect_partial_eq`
-    // Compilation times is related to the quantity of type A.
-    // Therefore, inline has no negative effects.
+/// Avoid compilation overhead when implementing multiple types.
+#[inline(never)]
+pub fn array_partial_eq(x: &dyn Array, y: &dyn PartialReflect) -> Option<bool> {
     let ReflectRef::Array(y) = y.reflect_ref() else {
         return Some(false);
     };
@@ -343,7 +340,10 @@ pub fn array_partial_eq<A: Array + ?Sized>(x: &A, y: &dyn PartialReflect) -> Opt
 }
 
 /// The default debug formatter for [`Array`] types.
-pub fn array_debug(dyn_array: &dyn Array, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+/// 
+/// Avoid compilation overhead when implementing multiple types.
+#[inline(never)]
+pub(crate) fn array_debug(dyn_array: &dyn Array, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     // This function should only be used to impl `PartialReflect::debug`
     // Non Inline: only be compiled once -> reduce compilation times
     let mut debug = f.debug_list();

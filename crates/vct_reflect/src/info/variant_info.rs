@@ -64,7 +64,7 @@ pub struct StructVariantInfo {
     field_names: Box<[&'static str]>,
     field_indices: HashMap<&'static str, usize>,
     name: &'static str,
-    custom_attributes: Arc<CustomAttributes>,
+    custom_attributes: Option<Arc<CustomAttributes>>,
     #[cfg(feature = "reflect_docs")]
     docs: Option<&'static str>,
 }
@@ -89,7 +89,7 @@ impl StructVariantInfo {
             fields: fields.to_vec().into_boxed_slice(),
             field_names,
             field_indices,
-            custom_attributes: Arc::new(CustomAttributes::default()),
+            custom_attributes: None,
             #[cfg(feature = "reflect_docs")]
             docs: None,
         }
@@ -151,7 +151,7 @@ impl StructVariantInfo {
 pub struct TupleVariantInfo {
     fields: Box<[UnnamedField]>,
     name: &'static str,
-    custom_attributes: Arc<CustomAttributes>,
+    custom_attributes: Option<Arc<CustomAttributes>>,
     #[cfg(feature = "reflect_docs")]
     docs: Option<&'static str>,
 }
@@ -167,7 +167,7 @@ impl TupleVariantInfo {
         Self {
             name,
             fields: fields.to_vec().into_boxed_slice(),
-            custom_attributes: Arc::new(CustomAttributes::default()),
+            custom_attributes: None,
             #[cfg(feature = "reflect_docs")]
             docs: None,
         }
@@ -208,7 +208,7 @@ impl TupleVariantInfo {
 #[derive(Clone, Debug)]
 pub struct UnitVariantInfo {
     name: &'static str,
-    custom_attributes: Arc<CustomAttributes>,
+    custom_attributes: Option<Arc<CustomAttributes>>,
     #[cfg(feature = "reflect_docs")]
     docs: Option<&'static str>,
 }
@@ -223,7 +223,7 @@ impl UnitVariantInfo {
     pub fn new(name: &'static str) -> Self {
         Self {
             name,
-            custom_attributes: Arc::new(CustomAttributes::default()),
+            custom_attributes: None,
             #[cfg(feature = "reflect_docs")]
             docs: None,
         }
@@ -290,9 +290,9 @@ impl VariantInfo {
     impl_cast_fn!(as_unit_variant: Unit => UnitVariantInfo);
 
     impl_custom_attributes_fn!(self => match self {
-        Self::Struct(info) => info.custom_attributes(),
-        Self::Tuple(info) => info.custom_attributes(),
-        Self::Unit(info) => info.custom_attributes(),
+        Self::Struct(info) => &info.custom_attributes,
+        Self::Tuple(info) => &info.custom_attributes,
+        Self::Unit(info) => &info.custom_attributes,
     });
 
     /// The name of the enum variant.

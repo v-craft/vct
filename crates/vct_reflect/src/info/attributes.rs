@@ -34,7 +34,7 @@ impl CustomAttribute {
 impl fmt::Debug for CustomAttribute {
     #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        self.value.debug(f)
+        self.value.reflect_debug(f)
     }
 }
 
@@ -114,32 +114,41 @@ macro_rules! impl_custom_attributes_fn {
     ($self:ident => $expr:expr) => {
         /// Return its own CustomAttributes
         #[inline]
-        pub fn custom_attributes($self: &Self) -> &$crate::info::CustomAttributes {
-            $expr
+        pub fn custom_attributes($self: &Self) -> Option<&$crate::info::CustomAttributes> {
+            match $expr {
+                Some(arc) => Some(&**arc),
+                None => todo!(),
+            }
         }
 
         /// Get specified attributes
         pub fn get_attribute<T: $crate::Reflect>($self: &Self) -> Option<&T> {
             // Not inline: Avoid excessive inline (recursion)
-            $self.custom_attributes().get::<T>()
+            $self.custom_attributes()?.get::<T>()
         }
 
         /// Get specified attributes
-        pub fn get_attribute_by_id($self: &Self, id: ::core::any::TypeId) -> Option<&dyn $crate::Reflect> {
+        pub fn get_attribute_by_id($self: &Self, __id: ::core::any::TypeId) -> Option<&dyn $crate::Reflect> {
             // Not inline: Avoid excessive inline (recursion)
-            $self.custom_attributes().get_by_id(id)
+            $self.custom_attributes()?.get_by_id(__id)
         }
 
         /// Check if it contains a certain attribute
         pub fn has_attribute<T: $crate::Reflect>($self: &Self) -> bool {
             // Not inline: Avoid excessive inline (recursion)
-            $self.custom_attributes().contains::<T>()
+            match $self.custom_attributes() {
+                Some(attrs) => attrs.contains::<T>(),
+                None => false,
+            }
         }
 
         /// Check if it contains a certain attribute
-        pub fn has_attribute_by_id($self: &Self, id: ::core::any::TypeId) -> bool {
+        pub fn has_attribute_by_id($self: &Self, __id: ::core::any::TypeId) -> bool {
             // Not inline: Avoid excessive inline (recursion)
-            $self.custom_attributes().contains_by_id(id)
+            match $self.custom_attributes() {
+                Some(attrs) => attrs.contains_by_id(__id),
+                None => false,
+            }
         }
     };
 }
@@ -147,11 +156,17 @@ macro_rules! impl_custom_attributes_fn {
 macro_rules! impl_with_custom_attributes {
     ($field:ident) => {
         /// Modify attributes (overwrite, not add)
-        #[inline]
         pub fn with_custom_attributes(self, attributes: CustomAttributes) -> Self {
-            Self {
-                $field: Arc::new(attributes),
-                ..self
+            if attributes.is_empty() {
+                Self {
+                    $field: None,
+                    ..self
+                }
+            } else {
+                Self {
+                    $field: Some(Arc::new(attributes)),
+                    ..self
+                }
             }
         }
     };

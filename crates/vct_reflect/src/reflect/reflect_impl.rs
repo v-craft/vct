@@ -78,7 +78,7 @@ impl fmt::Debug for dyn Reflect {
     #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         // PartialReflect::debug(self, f)
-        self.debug(f)
+        self.reflect_debug(f)
     }
 }
 

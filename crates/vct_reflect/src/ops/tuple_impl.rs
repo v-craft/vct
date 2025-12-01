@@ -132,13 +132,13 @@ impl PartialReflect for DynamicTuple {
         ReflectOwned::Tuple(self)
     }
 
+    #[inline]
     fn reflect_partial_eq(&self, other: &dyn PartialReflect) -> Option<bool> {
-        // Not Inline: `tuple_partial_eq()` is inline always
         tuple_partial_eq(self, other)
     }
 
     #[inline]
-    fn debug(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn reflect_debug(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "DynamicTuple(")?;
         tuple_debug(self, f)?;
         write!(f, ")")
@@ -155,7 +155,7 @@ impl MaybeTyped for DynamicTuple {}
 impl fmt::Debug for DynamicTuple {
     #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        self.debug(f)
+        self.reflect_debug(f)
     }
 }
 
@@ -325,12 +325,9 @@ impl GetTupleField for dyn Tuple {
 
 /// A function used to assist in the implementation of `reflect_partial_eq`
 ///
-/// It's `inline(always)`, Usually recommended only for impl `reflect_partial_eq`.
-#[inline(always)]
-pub fn tuple_partial_eq<T: Tuple + ?Sized>(x: &T, y: &dyn PartialReflect) -> Option<bool> {
-    // Inline: this function **should only** be used to impl `PartialReflect::reflect_partial_eq`
-    // Compilation times is related to the quantity of type A.
-    // Therefore, inline has no negative effects.
+/// Avoid compilation overhead when implementing multiple types.
+#[inline(never)]
+pub fn tuple_partial_eq(x: &dyn Tuple, y: &dyn PartialReflect) -> Option<bool> {
     let ReflectRef::Tuple(y) = y.reflect_ref() else {
         return Some(false);
     };
@@ -350,9 +347,9 @@ pub fn tuple_partial_eq<T: Tuple + ?Sized>(x: &T, y: &dyn PartialReflect) -> Opt
 
 /// A function used to assist in the implementation of `try_apply`
 ///
-/// It's `inline(always)`, Usually recommended only for impl `try_apply`.
-#[inline(always)]
-pub fn tuple_try_apply<T: Tuple>(x: &mut T, y: &dyn PartialReflect) -> Result<(), ApplyError> {
+/// Avoid compilation overhead when implementing multiple types.
+#[inline(never)]
+pub fn tuple_try_apply(x: &mut dyn Tuple, y: &dyn PartialReflect) -> Result<(), ApplyError> {
     let y = y.reflect_ref().as_tuple()?;
 
     for (idx, y_field) in y.iter_fields().enumerate() {
@@ -365,7 +362,10 @@ pub fn tuple_try_apply<T: Tuple>(x: &mut T, y: &dyn PartialReflect) -> Result<()
 }
 
 /// The default debug formatter for [`Tuple`] types.
-pub fn tuple_debug(dyn_tuple: &dyn Tuple, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+/// 
+/// Avoid compilation overhead when implementing multiple types.
+#[inline(never)]
+pub(crate) fn tuple_debug(dyn_tuple: &dyn Tuple, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     // This function should only be used to impl `PartialReflect::debug`
     // Non Inline: only be compiled once -> reduce compilation times
     let mut debug = f.debug_tuple("");
@@ -374,3 +374,6 @@ pub fn tuple_debug(dyn_tuple: &dyn Tuple, f: &mut fmt::Formatter<'_>) -> fmt::Re
     }
     debug.finish()
 }
+
+
+

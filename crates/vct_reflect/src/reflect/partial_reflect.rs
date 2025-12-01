@@ -12,7 +12,7 @@ use core::{
     any::{Any, TypeId},
     fmt,
 };
-pub trait PartialReflect: DynamicTypePath + Send + Sync + 'static {
+pub trait PartialReflect: DynamicTypePath + Send + Sync + Any {
     /// Returns the [`TypeInfo`] of the type **represented** by this value.
     ///
     /// For most types, this will simply return their own `TypeInfo`.
@@ -219,7 +219,7 @@ pub trait PartialReflect: DynamicTypePath + Send + Sync + 'static {
     /// [`List`]: crate::List
     /// [`Map`]: crate::Map
     /// [type path]: TypePath::type_path
-    fn debug(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn reflect_debug(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self.reflect_ref() {
             ReflectRef::Struct(dyn_struct) => struct_debug(dyn_struct, f),
             ReflectRef::TupleStruct(dyn_tuple_struct) => tuple_struct_debug(dyn_tuple_struct, f),
@@ -229,7 +229,7 @@ pub trait PartialReflect: DynamicTypePath + Send + Sync + 'static {
             ReflectRef::Map(dyn_map) => map_debug(dyn_map, f),
             ReflectRef::Set(dyn_set) => set_debug(dyn_set, f),
             ReflectRef::Enum(dyn_enum) => enum_debug(dyn_enum, f),
-            ReflectRef::Opaque(_) => write!(f, "Reflect({})", self.reflect_type_path()),
+            ReflectRef::Opaque(_) => write!(f, "Opaque({})", self.reflect_type_path()),
         }
     }
 }
@@ -284,7 +284,7 @@ impl dyn PartialReflect {
 impl fmt::Debug for dyn PartialReflect {
     #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        self.debug(f)
+        self.reflect_debug(f)
     }
 }
 

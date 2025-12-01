@@ -7,6 +7,7 @@ edition = "2024"
 default = ["std", "auto_register_inventory"]
 
 std = [
+    "vct_cfg/std",
     "vct_utils/std",
     "vct_os/std",
     "serde/std",
@@ -15,21 +16,20 @@ std = [
 
 reflect_docs = []
 
-auto_register = []
+auto_register = [
+    "vct_reflect_derive/auto_register"
+]
 
 auto_register_inventory = [
     "auto_register",
     "dep:inventory",
-    "vct_reflect_derive/auto_register_inventory"
 ]
 
-auto_register_static = [
-    "auto_register",
-    "vct_reflect_derive/auto_register_static"
-]
+
 
 [dependencies]
 vct_reflect_derive = { path = "derive" }
+vct_cfg = { path = "../vct_cfg", default-features = false }
 vct_utils = { path = "../vct_utils", default-features = false }
 vct_os = { path = "../vct_os", default-features = false }
 

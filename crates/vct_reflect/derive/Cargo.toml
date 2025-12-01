@@ -7,15 +7,12 @@ edition = "2024"
 proc-macro = true
 
 [features]
-default = ["reflect_docs"]
+default = ["reflect_docs", "auto_register"]
 
 reflect_docs = []
 
 auto_register = []
 
-auto_register_inventory = ["auto_register"]
-
-auto_register_static = ["auto_register", "dep:uuid"]
 
 [dependencies]
 vct_macro_utils = { path = "../../vct_macro_utils" }
@@ -23,14 +20,6 @@ vct_macro_utils = { path = "../../vct_macro_utils" }
 syn = { version = "2.0", features = ["full", "extra-traits"] }
 quote = "1.0"
 proc-macro2 = "1.0"
-
-indexmap = "2.0"
-uuid = { version = "1.18", default-features = false, features = [
-  "v4",
-], optional = true }
-
-[target.'cfg(target_arch = "wasm32")'.dependencies]
-uuid = { version = "1.18", default-features = false, features = ["js"] }
 
 [lints]
 workspace = true

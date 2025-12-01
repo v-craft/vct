@@ -51,7 +51,6 @@ impl TypeRegistry {
 
     // If key [`TypeId`] has already exist, the function will do nothing and return `false`.
     // If the key [`TypeId`] does not exist, the function will insert value and return `true`.
-    #[inline]
     fn register_internal(
         &mut self,
         type_id: TypeId,

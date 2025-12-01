@@ -20,7 +20,7 @@ pub struct EnumInfo {
     variants: Box<[VariantInfo]>,
     variant_names: Box<[&'static str]>,
     variant_indices: HashMap<&'static str, usize>,
-    custom_attributes: Arc<CustomAttributes>,
+    custom_attributes: Option<Arc<CustomAttributes>>,
     #[cfg(feature = "reflect_docs")]
     docs: Option<&'static str>,
 }
@@ -48,7 +48,7 @@ impl EnumInfo {
             variants: variants.to_vec().into_boxed_slice(),
             variant_names,
             variant_indices,
-            custom_attributes: Arc::new(CustomAttributes::default()),
+            custom_attributes: None,
             #[cfg(feature = "reflect_docs")]
             docs: None,
         }

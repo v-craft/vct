@@ -25,7 +25,9 @@ impl TupleInfo {
     /// Create a new container
     ///
     /// The order of fields inside the container is fixed
-    #[inline]
+    /// 
+    /// During tuple implementation, there may be a large number of generic expansions, and inlining is prohibited here.
+    #[inline(never)]
     pub fn new<T: TypePath + Tuple>(fields: &[UnnamedField]) -> Self {
         Self {
             ty: Type::of::<T>(),

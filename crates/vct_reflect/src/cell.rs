@@ -1,3 +1,48 @@
+//! Containers for static storage of type information.
+//! 
+//! # NonGenericTypeCell
+//! 
+//! For non generic types, provide the following containers:
+//! - [`NonGenericTypeInfoCell`]: Storage [`TypeInfo`]
+//! - [`NonGenericTypePathCell`]: Storage [`String`]
+//! 
+//! Internally, there is an [`OnceLock<T>`], almost no additional expenses.
+//! 
+//! You can use as follows:
+//! 
+//! ```ignore
+//! # use vct_reflect::cell::NonGenericTypePathCell;
+//! # use std::string::ToString;
+//! fn type_path() -> &'static str {
+//!     static CELL: NonGenericTypePathCell = NonGenericTypePathCell::new();
+//!     CELL.get_or_init(||"your_path".to_string())
+//! }
+//! ```
+//! 
+//! Of course, if string literal can be used, there is no need to use this container.
+//! 
+//! 
+//! # GenericTypeCell
+//! 
+//! For non generic types, provide the following containers:
+//! - [`GenericTypeInfoCell`]: Storage [`TypeInfo`]
+//! - [`GenericTypePathCell`]: Storage [`String`]
+//! 
+//! If the type is generic, the `static CELL` inside the function may be shared by different types.
+//! Therefore, the inner of this container is a [`TypeIdMap<T>`] wrapped in [`RwLock`].
+//! 
+//! You can use as follows:
+//! 
+//! ```ignore
+//! # use vct_reflect::cell::GenericTypePathCell;
+//! # use std::string::ToString;
+//! use std::any::type_name;
+//! fn type_path<T>() -> &'static str {
+//!     static CELL: GenericTypePathCell = GenericTypePathCell::new();
+//!     CELL.get_or_insert<T, _>(|| type_name::<T>().to_string())
+//! }
+//! ```
+
 use crate::info::TypeInfo;
 use alloc::{boxed::Box, string::String};
 use core::any::{Any, TypeId};
@@ -41,12 +86,12 @@ impl<T: TypedProperty> NonGenericTypeCell<T> {
     }
 }
 
-impl<T: TypedProperty> Default for NonGenericTypeCell<T> {
-    #[inline]
-    fn default() -> Self {
-        Self::new()
-    }
-}
+// impl<T: TypedProperty> Default for NonGenericTypeCell<T> {
+//     #[inline]
+//     fn default() -> Self {
+//         Self::new()
+//     }
+// }
 
 /// Container for static storage of type information with generics
 ///
@@ -116,9 +161,9 @@ impl<T: TypedProperty> GenericTypeCell<T> {
     }
 }
 
-impl<T: TypedProperty> Default for GenericTypeCell<T> {
-    #[inline]
-    fn default() -> Self {
-        Self::new()
-    }
-}
+// impl<T: TypedProperty> Default for GenericTypeCell<T> {
+//     #[inline]
+//     fn default() -> Self {
+//         Self::new()
+//     }
+// }

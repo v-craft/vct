@@ -161,13 +161,13 @@ impl PartialReflect for DynamicMap {
         ReflectOwned::Map(self)
     }
 
+    #[inline]
     fn reflect_partial_eq(&self, other: &dyn PartialReflect) -> Option<bool> {
-        // Not Inline: `map_partial_eq()` is inline always
         map_partial_eq(self, other)
     }
 
     #[inline]
-    fn debug(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn reflect_debug(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "DynamicMap(")?;
         map_debug(self, f)?;
         write!(f, ")")
@@ -184,7 +184,7 @@ impl MaybeTyped for DynamicMap {}
 impl fmt::Debug for DynamicMap {
     #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        self.debug(f)
+        self.reflect_debug(f)
     }
 }
 
@@ -394,12 +394,9 @@ impl Map for DynamicMap {
 
 /// A function used to assist in the implementation of `reflect_partial_eq`
 ///
-/// It's `inline(always)`, Usually recommended only for impl `reflect_partial_eq`.
-#[inline(always)]
-pub fn map_partial_eq<M: Map + ?Sized>(x: &M, y: &dyn PartialReflect) -> Option<bool> {
-    // Inline: this function **should only** be used to impl `PartialReflect::reflect_partial_eq`
-    // Compilation times is related to the quantity of type A.
-    // Therefore, inline has no negative effects.
+/// Avoid compilation overhead when implementing multiple types.
+#[inline(never)]
+pub fn map_partial_eq(x: &dyn Map, y: &dyn PartialReflect) -> Option<bool> {
     let ReflectRef::Map(y) = y.reflect_ref() else {
         return Some(false);
     };
@@ -423,7 +420,10 @@ pub fn map_partial_eq<M: Map + ?Sized>(x: &M, y: &dyn PartialReflect) -> Option<
 }
 
 /// The default debug formatter for [`Map`] types.
-pub fn map_debug(dyn_map: &dyn Map, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+/// 
+/// Avoid compilation overhead when implementing multiple types.
+#[inline(never)]
+pub(crate) fn map_debug(dyn_map: &dyn Map, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     // This function should only be used to impl `PartialReflect::debug`
     // Non Inline: only be compiled once -> reduce compilation times
     let mut debug = f.debug_map();

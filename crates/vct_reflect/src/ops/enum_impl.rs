@@ -310,13 +310,13 @@ impl PartialReflect for DynamicEnum {
         Some(hasher.finish())
     }
 
+    #[inline]
     fn reflect_partial_eq(&self, other: &dyn PartialReflect) -> Option<bool> {
-        // Not Inline: `enum_partial_eq()` is inline always
         enum_partial_eq(self, other)
     }
 
     #[inline]
-    fn debug(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn reflect_debug(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "DynamicEnum(")?;
         enum_debug(self, f)?;
         write!(f, ")")
@@ -333,7 +333,7 @@ impl MaybeTyped for DynamicEnum {}
 impl fmt::Debug for DynamicEnum {
     #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        self.debug(f)
+        self.reflect_debug(f)
     }
 }
 
@@ -505,12 +505,9 @@ impl Enum for DynamicEnum {
 
 /// A function used to assist in the implementation of `reflect_partial_eq`
 ///
-/// It's `inline(always)`, Usually recommended only for impl `reflect_partial_eq`.
-#[inline(always)]
-pub fn enum_partial_eq<TEnum: Enum + ?Sized>(x: &TEnum, y: &dyn PartialReflect) -> Option<bool> {
-    // Inline: this function **should only** be used to impl `PartialReflect::reflect_partial_eq`
-    // Compilation times is related to the quantity of type A.
-    // Therefore, inline has no negative effects.
+/// Avoid compilation overhead when implementing multiple types.
+#[inline(never)]
+pub fn enum_partial_eq(x: &dyn Enum, y: &dyn PartialReflect) -> Option<bool> {
     let ReflectRef::Enum(y) = y.reflect_ref() else {
         return Some(false);
     };
@@ -555,7 +552,10 @@ pub fn enum_partial_eq<TEnum: Enum + ?Sized>(x: &TEnum, y: &dyn PartialReflect) 
 }
 
 /// The default debug formatter for [`Enum`] types.
-pub fn enum_debug(dyn_enum: &dyn Enum, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+///
+/// Avoid compilation overhead when implementing multiple types.
+#[inline(never)]
+pub(crate) fn enum_debug(dyn_enum: &dyn Enum, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     // This function should only be used to impl `PartialReflect::debug`
     // Non Inline: only be compiled once -> reduce compilation times
     match dyn_enum.variant_kind() {
