@@ -45,6 +45,11 @@ pub struct CustomAttributes {
 }
 
 impl CustomAttributes {
+    #[inline]
+    pub const fn new() -> Self {
+        Self { attributes: TypeIdMap::new() }
+    }
+    
     /// Add attributes
     #[inline]
     pub fn with_attribute<T: Reflect>(mut self, value: T) -> Self {

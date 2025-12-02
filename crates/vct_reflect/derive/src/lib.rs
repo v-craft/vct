@@ -1,32 +1,14 @@
-
-pub(crate) static REFLECT_ATTRIBUTE_NAME: &str = "reflect";
-pub(crate) static TYPE_PATH_ATTRIBUTE_NAME: &str = "type_path";
-pub(crate) static TYPE_NAME_ATTRIBUTE_NAME: &str = "type_name";
-pub(crate) static REFLECT_CLONE_ATTRIBUTE_NAME: &str = "clone";
-pub(crate) static REFLECT_DEBUG_ATTRIBUTE_NAME: &str = "debug";
-pub(crate) static REFLECT_HASH_ATTRIBUTE_NAME: &str = "hash";
-pub(crate) static REFLECT_EQ_ATTRIBUTE_NAME: &str = "partial_eq";
-pub(crate) static IGNORE_ATTRIBUTE_NAME: &str = "ignore";
-
-mod path;
-mod utils;
-mod impls;
-
-#[cfg(feature = "reflect_docs")]
-mod reflect_docs;
-
-mod reflect_trait;
-mod reflect_alias;
-
-mod attributes;
-mod type_path;
-
-mod derive_data;
-
 use proc_macro::TokenStream;
 use syn::{DeriveInput, parse_macro_input};
 
-use crate::derive_data::ImplSourceKind;
+pub(crate) static REFLECT_ATTRIBUTE_NAME: &str = "reflect";
+
+mod path;
+
+mod utils;
+mod derive_data;
+mod impls;
+
 
 /// Generate all reflection related traits' impl
 /// 
@@ -34,17 +16,18 @@ use crate::derive_data::ImplSourceKind;
 /// 
 /// - impl `TypePath` (`DynamicTypePath` will be auto impl.)
 /// - impl `Typed` (`DynamicTyped` and `MaybeTyped` will be auto impl)
-/// - impl `PartialReflect`
 /// - impl `Reflect`
 /// - impl `GetTypeTraits`
+/// - impl `FromReflect`
 /// - impl `Struct` for `struct T{ ... }`
 /// - impl `TupleStruct` for `struct T(...);`
 /// - impl `Enum` for `enum T{ ... }`
-/// - impl `Opaque` for `struct T;`
+/// 
+/// `struct T;` will be considered as `Opaque`, and will not impl `Struct`.
 /// 
 /// ## Trait Impl Switch
 /// 
-/// If you don't want this macro to impl a certain trait, can add an additional macro: `#[reflect(Name = false)]`.
+/// If you don't want this macro to impl a certain trait, can add an additional macro: `#[reflect(TraitName = false)]`.
 /// If auto-impl is turned off, you need to provide a manual impl of the trait.
 /// 
 /// For example:
@@ -59,9 +42,20 @@ use crate::derive_data::ImplSourceKind;
 /// }
 /// ```
 /// 
-/// Specifically, using `#[reflect(Opaque = true)]` forces the type to be treated as `Opaque`.
+/// Actually, `#[reflect(TraitName = true)]` is allowed, but this is meaningless because it is the default value.
 /// 
-/// ## Trait Impl Control
+/// Specifically, using `#[reflect(opaque)]` forces the type to be treated as `Opaque`.
+/// 
+/// ```ignore
+/// #[derive(Reflect)]
+/// #[reflect(opaque)]
+/// struct A { /* ..Opaque.. */ }
+/// ```
+/// 
+/// Then, `Struct`/`Tuple`/`Enum`/`TupleStruct` will not be impl. 
+/// But note that for Opaque type, `reflect_clone` and other `reflect_xxx` return `None` by default.
+/// 
+/// ## Trait Method Impl Control
 /// 
 /// Some impls can also be controlled using macros:
 /// 
@@ -153,6 +147,28 @@ use crate::derive_data::ImplSourceKind;
 /// }
 /// ```
 /// 
+/// ### Alias Control
+/// 
+/// Rust requires that when implementing a trait, either the type or the trait must be defined in the current crate.
+/// Alias reflection is designed to address this issue by treating your specified type as an alias of another type during reflection,
+/// providing conversion support between the two.
+/// 
+/// You must strictly ensure that the two types of memory layouts are completely consistent!!
+/// 
+/// For Example:
+/// 
+/// ```ignore
+/// struct B {
+///     content: u64,
+/// }
+/// 
+/// #[derive(Reflect)]
+/// #[reflect(alias = B)]
+/// #[repr(transparent)] // ensures the same memory layout
+/// struct A(B);
+/// ```
+/// 
+/// 
 /// ### Docs Control
 /// 
 /// Should enable `reflect_docs` feature.
@@ -177,10 +193,73 @@ use crate::derive_data::ImplSourceKind;
 ///     content: u64,
 /// }
 /// ```
+/// 
+/// Note: use `#[reflect(docs = "")]` to close the docs of a certain type.
+/// 
+/// ### Auto Register
+/// 
+/// Should enable `auto_register` feature.
+/// 
+/// By default, types are not automatically registered (even if this `auto_register` is enabled).
+/// 
+/// You need to explicitly add macro `#[reflect(auto_register)]` on the type.
+/// 
+/// This macro has no negative effects when the `auto_register` feature is not enabled.
+/// 
+/// For Example:
+/// 
+/// ```ignore
+/// #[derive(Reflect)]
+/// #[reflect(auto_register)]
+/// struct A {
+///     /* ... */
+/// }
+/// ```
 #[proc_macro_derive(Reflect, attributes(reflect))]
 pub fn derive_full_reflect(input: TokenStream) -> TokenStream {
     let ast = parse_macro_input!(input as DeriveInput);
     impls::match_reflect_impls(ast, ImplSourceKind::DeriveLocalType)
 }
 
+/// A replacement for `#[derive(Reflect)]` to be used with foreign types which
+/// the definitions of cannot be altered. The usage is similar.
+/// 
+/// For example:
+/// 
+/// ```ignore
+/// impl_full_reflect!{
+///     #[reflect(@{6.5 + 1.3 / 2.0})]
+///     struct A {
+///         field: String,
+///     }
+/// };
+/// ```
+/// 
+/// Usually used to implement reflection for standard library types:
+/// 
+/// ```ignore
+/// impl_full_reflect!{
+///     #[reflect(type_name = "u8")]
+///     #[reflect(type_path = "u8")]
+///     #[reflect(Opaque = true)]
+///     #[reflect(hash = Hash)]
+///     #[reflect(clone = Clone)]
+///     #[reflect(debug = Debug)]
+///     #[reflect(partial_eq = PartialEq)]
+///     struct u8;
+/// };
+/// ```
+#[proc_macro]
+pub fn impl_full_reflect(input: TokenStream) -> TokenStream {
+    let ast = parse_macro_input!(input as DeriveInput);
+    impls::match_reflect_impls(ast, ImplSourceKind::ImplForeignType)
+}
 
+/// How the macro was invoked.
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub(crate) enum ImplSourceKind {
+    /// Using `impl_reflect!`.
+    ImplForeignType,
+    /// Using `#[derive(...)]`.
+    DeriveLocalType,
+}

@@ -2,7 +2,6 @@
 //! 
 //! - [`TypePath`](crate::info::TypePath)
 //! - [`Typed`](crate::info::Typed)
-//! - [`PartialReflect`](crate::PartialReflect)
 //! - [`Reflect`](crate::Reflect)
 //! - [`GetTypeTraits`](crate::Reflect)
 //! 
@@ -10,7 +9,6 @@
 //! 
 //! - [`DynamicTypePath`](crate::info::DynamicTypePath) (by `TypePath`'s impl )
 //! - [`DynamicTyped`](crate::info::DynamicTyped) (by `Typed`'s impl)
-//! - [`MaybeTyped`](crate::info::MaybeTyped) (by `Typed`'s impl)
 //! - [`Reflectable`](crate::Reflectable) (by all traits' impl)
 //! 
 //! [`FromReflect`](crate::FromReflect) is optional but it is usually recommended to implement.

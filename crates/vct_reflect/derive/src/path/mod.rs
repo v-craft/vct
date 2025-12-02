@@ -24,6 +24,7 @@ pub(crate) fn vct_reflect() -> syn::Path {
     vct_macro_utils::Manifest::shared(|manifest|manifest.get_path("vct_reflect"))
 }
 
+pub(crate) mod fp;
 mod cell;
 mod info;
 mod ops;

@@ -1,5 +1,5 @@
 
-use core::{fmt, any::TypeId};
+use core::{any::TypeId, fmt};
 use alloc::boxed::Box;
 
 use crate::{
