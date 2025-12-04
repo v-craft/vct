@@ -1,5 +1,7 @@
 use crate::{
-    Reflect, info::{TypePath, Typed}, registry::GetTypeTraits
+    Reflect,
+    info::{TypePath, Typed},
+    registry::GetTypeTraits,
 };
 
 // A trait used to simplify constraints

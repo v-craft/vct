@@ -9,9 +9,7 @@ pub use kind::{ReflectMut, ReflectOwned, ReflectRef};
 
 mod struct_impl;
 pub(crate) use struct_impl::struct_debug; // Only used for `PartialReflect::reflect_debug`
-pub use struct_impl::{
-    DynamicStruct, GetStructField, Struct, StructFieldIter, struct_partial_eq,
-};
+pub use struct_impl::{DynamicStruct, GetStructField, Struct, StructFieldIter, struct_partial_eq};
 
 mod tuple_struct_impl;
 pub(crate) use tuple_struct_impl::tuple_struct_debug; // Only used for `PartialReflect::reflect_debug`
@@ -23,8 +21,7 @@ pub use tuple_struct_impl::{
 mod tuple_impl;
 pub(crate) use tuple_impl::tuple_debug; // Only used for `PartialReflect::reflect_debug`
 pub use tuple_impl::{
-    DynamicTuple, GetTupleField, Tuple, TupleFieldIter, tuple_partial_eq,
-    tuple_try_apply,
+    DynamicTuple, GetTupleField, Tuple, TupleFieldIter, tuple_partial_eq, tuple_try_apply,
 };
 
 mod list_impl;

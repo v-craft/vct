@@ -1,7 +1,7 @@
 use core::{any::TypeId, fmt};
 
 use crate::{
-    info::{TypeInfo, TypePath},
+    info::{TypeInfo, Typed},
     registry::{FromType, GetTypeTraits, TypeTrait, TypeTraits},
 };
 use vct_os::sync::{Arc, PoisonError, RwLock, RwLockReadGuard, RwLockWriteGuard};
@@ -107,7 +107,7 @@ impl TypeRegistry {
     }
 
     /// Create a new [`TypeRegistry`].
-    /// 
+    ///
     /// This function will register some types by default,
     /// such as `u8`-`u128`, `i8`-`i128`, `usize`, and `isize`.
     pub fn new() -> Self {
@@ -125,6 +125,8 @@ impl TypeRegistry {
         registry.register::<i128>();
         registry.register::<usize>();
         registry.register::<isize>();
+
+        // TODO: bool String
 
         registry
     }
@@ -153,7 +155,7 @@ impl TypeRegistry {
     /// # Panic
     ///
     /// - Type 'T' is not registered.
-    pub fn register_type_trait<T: TypePath, D: TypeTrait + FromType<T>>(&mut self) {
+    pub fn register_type_trait<T: Typed, D: TypeTrait + FromType<T>>(&mut self) {
         match self.traits_map.get_mut(&TypeId::of::<T>()) {
             Some(type_traits) => type_traits.insert(D::from_type()),
             None => panic!(

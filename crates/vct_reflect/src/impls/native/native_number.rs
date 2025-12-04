@@ -1,15 +1,13 @@
-
-use core::{any::TypeId, fmt};
 use alloc::boxed::Box;
+use core::{any::TypeId, fmt};
 
 use crate::{
-    Reflect, FromReflect,
-    info::{TypePath, Typed, TypeInfo, OpaqueInfo, ReflectKind},
+    FromReflect, Reflect,
     cell::NonGenericTypeInfoCell,
-    ops::{ApplyError, ReflectRef, ReflectMut, ReflectOwned, ReflectCloneError},
-    registry::{TypeRegistry, TypeTraits, GetTypeTraits}
+    info::{OpaqueInfo, ReflectKind, TypeInfo, TypePath, Typed},
+    ops::{ApplyError, ReflectCloneError, ReflectMut, ReflectOwned, ReflectRef},
+    registry::{GetTypeTraits, TypeRegistry, TypeTraits},
 };
-
 
 macro_rules! impl_native_number {
     ($name:ident, $str_name:literal) => {
@@ -121,7 +119,7 @@ macro_rules! impl_native_number {
 
                 let kind = value.reflect_kind();
                 if kind != ReflectKind::Opaque {
-                    return Err(ApplyError::MismatchedKinds{
+                    return Err(ApplyError::MismatchedKinds {
                         from_kind: kind,
                         to_kind: ReflectKind::Opaque,
                     });
@@ -135,9 +133,7 @@ macro_rules! impl_native_number {
 
             fn reflect_partial_eq(&self, other: &dyn Reflect) -> Option<bool> {
                 match other.downcast_ref::<$name>() {
-                    Some(val) => {
-                        Some(PartialEq::eq(self, val))
-                    },
+                    Some(val) => Some(PartialEq::eq(self, val)),
                     None => None,
                 }
             }
@@ -205,8 +201,6 @@ macro_rules! impl_native_number {
         }
     };
 }
-
-
 
 impl_native_number!(u8, "u8");
 impl_native_number!(i8, "i8");

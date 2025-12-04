@@ -1,5 +1,6 @@
-use crate::{FromReflect, Reflect, registry::FromType};
 use alloc::boxed::Box;
+
+use crate::{FromReflect, Reflect, info::Typed, registry::FromType};
 
 /// See [`FromReflect`]
 #[derive(Clone)]
@@ -9,8 +10,8 @@ pub struct TypeTraitFromReflect {
 
 impl TypeTraitFromReflect {
     /// Call T's [`PartialReflect`]
-    /// 
-    /// [`TypeTraitFromReflect`] does not have a type flag, 
+    ///
+    /// [`TypeTraitFromReflect`] does not have a type flag,
     /// but the functions used internally are type specific.
     #[inline(always)]
     pub fn from_reflect(&self, param_1: &dyn Reflect) -> Option<Box<dyn Reflect>> {
@@ -18,12 +19,10 @@ impl TypeTraitFromReflect {
     }
 }
 
-impl<T: FromReflect> FromType<T> for TypeTraitFromReflect {
+impl<T: Typed + FromReflect> FromType<T> for TypeTraitFromReflect {
     fn from_type() -> Self {
         Self {
-            func: |param_1| {
-                T::from_reflect(param_1).map(|val| Box::new(val) as Box<dyn Reflect>)
-            },
+            func: |param_1| T::from_reflect(param_1).map(|val| Box::new(val) as Box<dyn Reflect>),
         }
     }
 }

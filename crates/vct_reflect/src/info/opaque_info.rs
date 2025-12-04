@@ -3,9 +3,11 @@ use vct_os::sync::Arc;
 use crate::{
     Reflect,
     info::{
-        Generics, Type, TypePath, CustomAttributes, docs_macro::impl_docs_fn, 
-        generics::impl_generic_fn, type_struct::impl_type_fn, 
-        attributes::{impl_custom_attributes_fn, impl_with_custom_attributes}
+        CustomAttributes, Generics, Type, TypePath,
+        attributes::{impl_custom_attributes_fn, impl_with_custom_attributes},
+        docs_macro::impl_docs_fn,
+        generics::impl_generic_fn,
+        type_struct::impl_type_fn,
     },
 };
 

@@ -2,7 +2,9 @@ use alloc::borrow::Cow;
 use core::fmt;
 
 use crate::{
-    Reflect, info::{ReflectKind, VariantKind}, ops::{ReflectMut, ReflectRef}
+    Reflect,
+    info::{ReflectKind, VariantKind},
+    ops::{ReflectMut, ReflectRef},
 };
 
 /// A **singular** element access within a path.
@@ -134,38 +136,28 @@ impl<'a> Accessor<'a> {
     ) -> Result<&'r dyn Reflect, AccessError<'a>> {
         use ReflectRef::*;
 
-        let res: Result<Option<&'r dyn Reflect>, AccessErrorKind> =
-            match (self, base.reflect_ref()) {
-                (Self::FieldName(field), Struct(struct_ref)) => {
-                    Ok(struct_ref.field(field.as_ref()))
-                }
-                (Self::FieldName(field), Enum(enum_ref)) => {
-                    match_variant!(enum_ref, VariantKind::Struct => enum_ref.field(field.as_ref()))
-                }
-                (Self::FieldName(_), actual) => {
-                    Err(invalid_kind!(ReflectKind::Struct, actual.kind()))
-                }
-                (&Self::FieldIndex(index), Struct(struct_ref)) => Ok(struct_ref.field_at(index)),
-                (&Self::FieldIndex(index), Enum(enum_ref)) => {
-                    match_variant!(enum_ref, VariantKind::Struct => enum_ref.field_at(index))
-                }
-                (Self::FieldIndex(_), actual) => {
-                    Err(invalid_kind!(ReflectKind::Struct, actual.kind()))
-                }
-                (&Self::TupleIndex(index), TupleStruct(tuple)) => Ok(tuple.field(index)),
-                (&Self::TupleIndex(index), Tuple(tuple)) => Ok(tuple.field(index)),
-                (&Self::TupleIndex(index), Enum(enum_ref)) => {
-                    match_variant!(enum_ref, VariantKind::Tuple => enum_ref.field_at(index))
-                }
-                (Self::TupleIndex(_), actual) => {
-                    Err(invalid_kind!(ReflectKind::Tuple, actual.kind()))
-                }
-                (&Self::ListIndex(index), List(list)) => Ok(list.get(index)),
-                (&Self::ListIndex(index), Array(list)) => Ok(list.get(index)),
-                (Self::ListIndex(_), actual) => {
-                    Err(invalid_kind!(ReflectKind::List, actual.kind()))
-                }
-            };
+        let res: Result<Option<&'r dyn Reflect>, AccessErrorKind> = match (self, base.reflect_ref())
+        {
+            (Self::FieldName(field), Struct(struct_ref)) => Ok(struct_ref.field(field.as_ref())),
+            (Self::FieldName(field), Enum(enum_ref)) => {
+                match_variant!(enum_ref, VariantKind::Struct => enum_ref.field(field.as_ref()))
+            }
+            (Self::FieldName(_), actual) => Err(invalid_kind!(ReflectKind::Struct, actual.kind())),
+            (&Self::FieldIndex(index), Struct(struct_ref)) => Ok(struct_ref.field_at(index)),
+            (&Self::FieldIndex(index), Enum(enum_ref)) => {
+                match_variant!(enum_ref, VariantKind::Struct => enum_ref.field_at(index))
+            }
+            (Self::FieldIndex(_), actual) => Err(invalid_kind!(ReflectKind::Struct, actual.kind())),
+            (&Self::TupleIndex(index), TupleStruct(tuple)) => Ok(tuple.field(index)),
+            (&Self::TupleIndex(index), Tuple(tuple)) => Ok(tuple.field(index)),
+            (&Self::TupleIndex(index), Enum(enum_ref)) => {
+                match_variant!(enum_ref, VariantKind::Tuple => enum_ref.field_at(index))
+            }
+            (Self::TupleIndex(_), actual) => Err(invalid_kind!(ReflectKind::Tuple, actual.kind())),
+            (&Self::ListIndex(index), List(list)) => Ok(list.get(index)),
+            (&Self::ListIndex(index), Array(list)) => Ok(list.get(index)),
+            (Self::ListIndex(_), actual) => Err(invalid_kind!(ReflectKind::List, actual.kind())),
+        };
 
         res.and_then(|opt| opt.ok_or(AccessErrorKind::MissingField(base.reflect_kind())))
             .map_err(|kind| AccessError {
@@ -322,10 +314,7 @@ impl<'a> OffsetAccessor<'a> {
 
     /// Dynamic Access Fields, If successful, return the reference of the field.
     #[inline]
-    pub fn access<'r>(
-        &self,
-        base: &'r dyn Reflect,
-    ) -> Result<&'r dyn Reflect, AccessError<'a>> {
+    pub fn access<'r>(&self, base: &'r dyn Reflect) -> Result<&'r dyn Reflect, AccessError<'a>> {
         self.accessor.access(base, self.offset)
     }
 

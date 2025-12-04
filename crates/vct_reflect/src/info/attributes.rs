@@ -13,9 +13,11 @@ pub struct CustomAttributes {
 impl CustomAttributes {
     #[inline]
     pub const fn new() -> Self {
-        Self { attributes: TypeIdMap::new() }
+        Self {
+            attributes: TypeIdMap::new(),
+        }
     }
-    
+
     /// Add attributes
     #[inline]
     pub fn with_attribute<T: Reflect>(mut self, value: T) -> Self {
@@ -26,9 +28,7 @@ impl CustomAttributes {
     /// Get the iterator of internal data
     #[inline]
     pub fn iter(&self) -> impl ExactSizeIterator<Item = (&TypeId, &dyn Reflect)> {
-        self.attributes
-            .iter()
-            .map(|(key, val)| (key, &**val))
+        self.attributes.iter().map(|(key, val)| (key, &**val))
     }
 
     /// Check if it contains a certain attribute

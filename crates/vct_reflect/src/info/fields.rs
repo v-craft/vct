@@ -9,7 +9,6 @@ use crate::info::{
     type_struct::impl_type_fn,
 };
 
-
 /// named field(struct field)
 #[derive(Clone, Debug)]
 pub struct NamedField {

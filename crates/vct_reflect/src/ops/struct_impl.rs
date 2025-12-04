@@ -1,18 +1,19 @@
 use crate::{
-    Reflect, reflect::impl_cast_reflect_fn,
+    Reflect,
     cell::NonGenericTypeInfoCell,
-    info::{ReflectKind, StructInfo, TypeInfo, TypePath, Typed, OpaqueInfo},
+    info::{OpaqueInfo, ReflectKind, StructInfo, TypeInfo, TypePath, Typed},
     ops::{ApplyError, ReflectMut, ReflectOwned, ReflectRef},
+    reflect::impl_cast_reflect_fn,
 };
 use alloc::{borrow::Cow, boxed::Box, string::ToString, vec::Vec};
 use core::fmt;
 use vct_utils::collections::HashMap;
 
 /// Representing [`Struct`]`, used to dynamically modify the type of data and information.
-/// 
-/// Dynamic types are special in that their TypeInfo is [`OpaqueInfo`], 
+///
+/// Dynamic types are special in that their TypeInfo is [`OpaqueInfo`],
 /// but other APIs are consistent with the type they represent, such as [`reflect_kind`], [`reflect_ref`]
-/// 
+///
 /// [`reflect_kind`]: crate::Reflect::reflect_kind
 /// [`reflect_ref`]: crate::Reflect::reflect_ref
 #[derive(Default)]
@@ -61,18 +62,22 @@ impl DynamicStruct {
     #[inline]
     pub const fn new() -> Self {
         Self {
-            struct_info: None, 
-            fields: Vec::new(), 
-            field_names: Vec::new(), 
-            field_indices: HashMap::<_,_>::new()
+            struct_info: None,
+            fields: Vec::new(),
+            field_names: Vec::new(),
+            field_indices: HashMap::<_, _>::new(),
         }
     }
     /// Sets the [`StructInfo`] to be represented by this `DynamicStruct`.
     #[inline]
     pub fn set_type_info(&mut self, struct_info: Option<&'static TypeInfo>) {
         match struct_info {
-            Some(TypeInfo::Struct(_)) | None => {},
-            _ => { panic!("Call `DynamicStruct::set_type_info`, but the input is not struct information or None.") },
+            Some(TypeInfo::Struct(_)) | None => {}
+            _ => {
+                panic!(
+                    "Call `DynamicStruct::set_type_info`, but the input is not struct information or None."
+                )
+            }
         }
 
         self.struct_info = struct_info;
@@ -81,11 +86,7 @@ impl DynamicStruct {
     /// Inserts a field named `name` with value `value` into the struct.
     ///
     /// If the field already exists, it is overwritten.
-    pub fn insert_boxed(
-        &mut self,
-        name: impl Into<Cow<'static, str>>,
-        value: Box<dyn Reflect>,
-    ) {
+    pub fn insert_boxed(&mut self, name: impl Into<Cow<'static, str>>, value: Box<dyn Reflect>) {
         let name: Cow<'static, str> = name.into();
         if let Some(index) = self.field_indices.get(&name) {
             self.fields[*index] = value;
@@ -161,7 +162,6 @@ impl Reflect for DynamicStruct {
         struct_debug(self, f)?;
         write!(f, ")")
     }
-
 }
 
 impl fmt::Debug for DynamicStruct {
@@ -241,9 +241,9 @@ pub trait Struct: Reflect {
     }
 
     /// Get actual [`StructInfo`] of underlying types.
-    /// 
+    ///
     /// If it is a dynamic type, it will return `None`.
-    /// 
+    ///
     /// If it is not a dynamic type and the returned value is not `None` or `StructInfo`, it will panic.
     /// (If you want to implement dynamic types yourself, please return None.)
     #[inline]
@@ -252,7 +252,7 @@ pub trait Struct: Reflect {
     }
 
     /// Get the [`StructInfo`] of representation.
-    /// 
+    ///
     /// Normal types return their own information,
     /// while dynamic types return `None`` if they do not represent an object
     #[inline]
@@ -359,8 +359,7 @@ pub trait GetStructField {
 
 impl<S: Struct> GetStructField for S {
     fn get_field<T: Reflect>(&self, name: &str) -> Option<&T> {
-        self.field(name)
-            .and_then(|value| value.downcast_ref::<T>())
+        self.field(name).and_then(|value| value.downcast_ref::<T>())
     }
 
     fn get_field_mut<T: Reflect>(&mut self, name: &str) -> Option<&mut T> {
@@ -372,8 +371,7 @@ impl<S: Struct> GetStructField for S {
 impl GetStructField for dyn Struct {
     #[inline]
     fn get_field<T: Reflect>(&self, name: &str) -> Option<&T> {
-        self.field(name)
-            .and_then(|value| value.downcast_ref::<T>())
+        self.field(name).and_then(|value| value.downcast_ref::<T>())
     }
 
     #[inline]
@@ -382,7 +380,6 @@ impl GetStructField for dyn Struct {
             .and_then(|value| value.downcast_mut::<T>())
     }
 }
-
 
 /// A function used to assist in the implementation of `reflect_partial_eq`
 ///
@@ -428,7 +425,7 @@ pub fn struct_partial_eq(x: &dyn Struct, y: &dyn Reflect) -> Option<bool> {
 }
 
 /// The default debug formatter for [`Struct`] types.
-/// 
+///
 /// Avoid compilation overhead when implementing multiple types.
 #[inline(never)]
 pub(crate) fn struct_debug(dyn_struct: &dyn Struct, f: &mut fmt::Formatter<'_>) -> fmt::Result {

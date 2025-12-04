@@ -11,21 +11,21 @@ use core::{
 
 use crate::{
     Reflect,
-    reflect::impl_cast_reflect_fn,
     cell::NonGenericTypeInfoCell,
-    info::{EnumInfo, ReflectKind, TypeInfo, TypePath, Typed, VariantKind, OpaqueInfo},
+    info::{EnumInfo, OpaqueInfo, ReflectKind, TypeInfo, TypePath, Typed, VariantKind},
     ops::{
         ApplyError, DynamicStruct, DynamicTuple, DynamicVariant, ReflectMut, ReflectOwned,
         ReflectRef, Struct, Tuple, VariantFieldIter,
     },
+    reflect::impl_cast_reflect_fn,
     reflect_hasher,
 };
 
 /// Representing [`Enum`]`, used to dynamically modify the type of data and information.
-/// 
-/// Dynamic types are special in that their TypeInfo is [`OpaqueInfo`], 
+///
+/// Dynamic types are special in that their TypeInfo is [`OpaqueInfo`],
 /// but other APIs are consistent with the type they represent, such as [`reflect_kind`], [`reflect_ref`]
-/// 
+///
 /// [`reflect_kind`]: crate::Reflect::reflect_kind
 /// [`reflect_ref`]: crate::Reflect::reflect_ref
 #[derive(Default)]
@@ -101,15 +101,19 @@ impl DynamicEnum {
     }
 
     /// Sets the [`TypeInfo`] to be represented by this `DynamicEnum`.
-    /// 
+    ///
     /// # Panic
-    /// 
+    ///
     /// If the input is not enum info or None.
     #[inline]
     pub fn set_type_info(&mut self, enum_info: Option<&'static TypeInfo>) {
         match enum_info {
-            Some(TypeInfo::Enum(_)) | None => {},
-            _ => { panic!("Call `DynamicEnum::set_type_info`, but the input is not enum information or None.") },
+            Some(TypeInfo::Enum(_)) | None => {}
+            _ => {
+                panic!(
+                    "Call `DynamicEnum::set_type_info`, but the input is not enum information or None."
+                )
+            }
         }
 
         self.enum_info = enum_info;
@@ -292,7 +296,6 @@ impl Reflect for DynamicEnum {
         enum_partial_eq(self, other)
     }
 
-
     #[inline]
     fn reflect_hash(&self) -> Option<u64> {
         enum_hash(self)
@@ -391,9 +394,9 @@ pub trait Enum: Reflect {
     }
 
     /// Get actual [`EnumInfo`] of underlying types.
-    /// 
+    ///
     /// If it is a dynamic type, it will return `None`.
-    /// 
+    ///
     /// If it is not a dynamic type and the returned value is not `None` or `EnumInfo`, it will panic.
     /// (If you want to implement dynamic types yourself, please return None.)
     #[inline]
@@ -402,7 +405,7 @@ pub trait Enum: Reflect {
     }
 
     /// Get the [`EnumInfo`] of representation.
-    /// 
+    ///
     /// Normal types return their own information,
     /// while dynamic types return `None`` if they do not represent an object
     #[inline]

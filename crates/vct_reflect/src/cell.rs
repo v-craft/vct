@@ -1,15 +1,15 @@
 //! Containers for static storage of type information.
-//! 
+//!
 //! # NonGenericTypeCell
-//! 
+//!
 //! For non generic types, provide the following containers:
 //! - [`NonGenericTypeInfoCell`]: Storage [`TypeInfo`]
 //! - [`NonGenericTypePathCell`]: Storage [`String`]
-//! 
+//!
 //! Internally, there is an [`OnceLock<T>`], almost no additional expenses.
-//! 
+//!
 //! You can use as follows:
-//! 
+//!
 //! ```ignore
 //! # use vct_reflect::cell::NonGenericTypePathCell;
 //! # use std::string::ToString;
@@ -18,22 +18,22 @@
 //!     CELL.get_or_init(||"your_path".to_string())
 //! }
 //! ```
-//! 
-//! Normally, `NonGenericTypePathCell` should not be used 
+//!
+//! Normally, `NonGenericTypePathCell` should not be used
 //! as it can be expressed as a string literal.
-//! 
-//! 
+//!
+//!
 //! # GenericTypeCell
-//! 
+//!
 //! For non generic types, provide the following containers:
 //! - [`GenericTypeInfoCell`]: Storage [`TypeInfo`]
 //! - [`GenericTypePathCell`]: Storage [`String`]
-//! 
+//!
 //! If the type is generic, the `static CELL` inside the function may be shared by different types.
 //! Therefore, the inner of this container is a [`TypeIdMap<T>`] wrapped in [`RwLock`].
-//! 
+//!
 //! You can use as follows:
-//! 
+//!
 //! ```ignore
 //! # use vct_reflect::cell::GenericTypePathCell;
 //! # use std::string::ToString;

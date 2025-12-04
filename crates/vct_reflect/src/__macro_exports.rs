@@ -1,9 +1,9 @@
 //! Contents provided to proc macros.
-//! 
+//!
 //! Users should not use any content here.
 
 pub mod alloc_utils {
-    // When generating code, using `std` or `alloc` directly is unsafe. 
+    // When generating code, using `std` or `alloc` directly is unsafe.
     // Users may be in a `no_std` env or not displaying imported `alloc`.
     //
     // Therefore, proc-macro crate will use this path.
@@ -27,8 +27,6 @@ pub mod alloc_utils {
         res
     }
 }
-
-
 
 // pub trait RegisterForReflection {
 //     fn __register(_registry: &mut TypeRegistry) {}

@@ -37,7 +37,7 @@ impl<'a> EnumVariant<'a> {
     pub fn active_fields(&self) -> impl Iterator<Item = &StructField<'a>> {
         self.fields()
             .iter()
-            .filter(|field| field.attrs.ignore.is_active())
+            .filter(|field| !field.attrs.ignore)
     }
 
     /// Generates a `TokenStream` for `VariantInfo` construction.

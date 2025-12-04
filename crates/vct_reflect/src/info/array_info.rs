@@ -4,8 +4,10 @@ use crate::{
     Reflect,
     info::{
         CustomAttributes, Generics, Type, TypeInfo, TypePath, Typed,
-        attributes::{impl_custom_attributes_fn, impl_with_custom_attributes}, 
-        docs_macro::impl_docs_fn, generics::impl_generic_fn, type_struct::impl_type_fn,
+        attributes::{impl_custom_attributes_fn, impl_with_custom_attributes},
+        docs_macro::impl_docs_fn,
+        generics::impl_generic_fn,
+        type_struct::impl_type_fn,
     },
     ops::Array,
 };
@@ -31,13 +33,11 @@ impl ArrayInfo {
     impl_with_custom_attributes!(custom_attributes);
 
     /// create a new container
-    /// 
+    ///
     /// During tuple implementation, there may be a large number of generic expansions.
     /// So inlining is prohibited here.
     #[inline(never)]
-    pub fn new<TArray: Array + TypePath, TItem: Reflect + Typed>(
-        capacity: usize,
-    ) -> Self {
+    pub fn new<TArray: Array + TypePath, TItem: Reflect + Typed>(capacity: usize) -> Self {
         Self {
             ty: Type::of::<TArray>(),
             generics: Generics::new(),

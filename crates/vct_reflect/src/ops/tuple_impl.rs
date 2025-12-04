@@ -1,16 +1,18 @@
 use crate::{
-    Reflect, cell::NonGenericTypeInfoCell,
-    info::{OpaqueInfo, ReflectKind, TupleInfo, TypeInfo, TypePath, Typed}, ops::{ApplyError, ReflectMut, ReflectOwned, ReflectRef}, 
-    reflect::impl_cast_reflect_fn
+    Reflect,
+    cell::NonGenericTypeInfoCell,
+    info::{OpaqueInfo, ReflectKind, TupleInfo, TypeInfo, TypePath, Typed},
+    ops::{ApplyError, ReflectMut, ReflectOwned, ReflectRef},
+    reflect::impl_cast_reflect_fn,
 };
 use alloc::{boxed::Box, vec::Vec};
 use core::fmt;
 
 /// Representing [`Tuple`]`, used to dynamically modify the type of data and information.
-/// 
-/// Dynamic types are special in that their TypeInfo is [`OpaqueInfo`], 
+///
+/// Dynamic types are special in that their TypeInfo is [`OpaqueInfo`],
 /// but other APIs are consistent with the type they represent, such as [`reflect_kind`], [`reflect_ref`]
-/// 
+///
 /// [`reflect_kind`]: crate::Reflect::reflect_kind
 /// [`reflect_ref`]: crate::Reflect::reflect_ref
 #[derive(Default)]
@@ -53,25 +55,30 @@ impl Typed for DynamicTuple {
     }
 }
 
-
 impl DynamicTuple {
     #[inline]
     pub const fn new() -> Self {
-        Self { tuple_info: None, fields: Vec::new() }
+        Self {
+            tuple_info: None,
+            fields: Vec::new(),
+        }
     }
 
     /// Sets the [`TypeInfo`] to be represented by this `DynamicTuple`.
-    /// 
+    ///
     /// # Panic
-    /// 
+    ///
     /// If the input is not list info or None.
     #[inline]
     pub fn set_type_info(&mut self, tuple_info: Option<&'static TypeInfo>) {
         match tuple_info {
-            Some(TypeInfo::Tuple(_)) | None => {},
-            _ => { panic!("Call `DynamicMap::set_type_info`, but the input is not tuple information or None.") },
+            Some(TypeInfo::Tuple(_)) | None => {}
+            _ => {
+                panic!(
+                    "Call `DynamicMap::set_type_info`, but the input is not tuple information or None."
+                )
+            }
         }
-
 
         self.tuple_info = tuple_info;
     }
@@ -128,7 +135,6 @@ impl Reflect for DynamicTuple {
     fn try_apply(&mut self, value: &dyn Reflect) -> Result<(), ApplyError> {
         tuple_try_apply(self, value)
     }
-
 
     #[inline]
     fn reflect_partial_eq(&self, other: &dyn Reflect) -> Option<bool> {
@@ -209,9 +215,9 @@ pub trait Tuple: Reflect {
     }
 
     /// Get actual [`TupleInfo`] of underlying types.
-    /// 
+    ///
     /// If it is a dynamic type, it will return `None`.
-    /// 
+    ///
     /// If it is not a dynamic type and the returned value is not `None` or `TupleInfo`, it will panic.
     /// (If you want to implement dynamic types yourself, please return None.)
     #[inline]
@@ -220,7 +226,7 @@ pub trait Tuple: Reflect {
     }
 
     /// Get the [`TupleInfo`] of representation.
-    /// 
+    ///
     /// Normal types return their own information,
     /// while dynamic types return `None`` if they do not represent an object
     #[inline]
@@ -354,7 +360,6 @@ pub fn tuple_try_apply(x: &mut dyn Tuple, y: &dyn Reflect) -> Result<(), ApplyEr
     Ok(())
 }
 
-
 /// A function used to assist in the implementation of `reflect_partial_eq`
 ///
 /// Avoid compilation overhead when implementing multiple types.
@@ -378,7 +383,7 @@ pub fn tuple_partial_eq(x: &dyn Tuple, y: &dyn Reflect) -> Option<bool> {
 }
 
 /// The default debug formatter for [`Tuple`] types.
-/// 
+///
 /// Avoid compilation overhead when implementing multiple types.
 #[inline(never)]
 pub(crate) fn tuple_debug(dyn_tuple: &dyn Tuple, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -390,6 +395,3 @@ pub(crate) fn tuple_debug(dyn_tuple: &dyn Tuple, f: &mut fmt::Formatter<'_>) -> 
     }
     debug.finish()
 }
-
-
-

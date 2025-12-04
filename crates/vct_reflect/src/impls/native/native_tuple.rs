@@ -10,19 +10,19 @@
 //! [`DynamicTypePath`]: crate::info::DynamicTypePath
 //! [`DynamicTyped`]: crate::info::DynamicTyped
 
-use core::fmt;
 use crate::{
     FromReflect, Reflect,
     cell::{GenericTypeInfoCell, GenericTypePathCell},
+    impls::concat,
     info::{ReflectKind, TupleInfo, TypeInfo, TypePath, Typed, UnnamedField},
     ops::{
         ApplyError, ReflectCloneError, ReflectMut, ReflectOwned, ReflectRef, Tuple, TupleFieldIter,
-        tuple_partial_eq, tuple_try_apply, tuple_debug,
+        tuple_debug, tuple_partial_eq, tuple_try_apply,
     },
     registry::{GetTypeTraits, TypeRegistry, TypeTraits},
-    impls::concat,
 };
 use alloc::{boxed::Box, vec, vec::Vec};
+use core::fmt;
 use vct_utils::range_invoke;
 
 macro_rules! impl_type_path_tuple {
@@ -197,7 +197,7 @@ macro_rules! impl_reflect_tuple {
                     )*
                 )))
             }
-        
+
             #[inline]
             fn reflect_debug(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
                 tuple_debug(self, f)

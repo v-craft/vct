@@ -1,4 +1,4 @@
-use crate::{Reflect, registry::FromType};
+use crate::{Reflect, info::Typed, registry::FromType};
 use alloc::boxed::Box;
 
 /// See [`Default`]
@@ -9,8 +9,8 @@ pub struct TypeTraitDefault {
 
 impl TypeTraitDefault {
     /// Call T's [`Default`]
-    /// 
-    /// [`TypeTraitDefault`] does not have a type flag, 
+    ///
+    /// [`TypeTraitDefault`] does not have a type flag,
     /// but the functions used internally are type specific.
     #[inline(always)]
     pub fn default(&self) -> Box<dyn Reflect> {
@@ -18,7 +18,7 @@ impl TypeTraitDefault {
     }
 }
 
-impl<T: Default + Reflect> FromType<T> for TypeTraitDefault {
+impl<T: Default + Typed + Reflect> FromType<T> for TypeTraitDefault {
     fn from_type() -> Self {
         Self {
             func: || Box::<T>::default(),

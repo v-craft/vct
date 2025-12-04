@@ -2,8 +2,9 @@ use alloc::{boxed::Box, vec::Vec};
 use core::fmt;
 
 use crate::{
-    Reflect, cell::NonGenericTypeInfoCell,
-    info::{ReflectKind, TupleStructInfo, TypeInfo, TypePath, Typed, OpaqueInfo},
+    Reflect,
+    cell::NonGenericTypeInfoCell,
+    info::{OpaqueInfo, ReflectKind, TupleStructInfo, TypeInfo, TypePath, Typed},
     ops::{ApplyError, DynamicTuple, ReflectMut, ReflectOwned, ReflectRef, Tuple},
     reflect::impl_cast_reflect_fn,
 };
@@ -18,10 +19,10 @@ impl From<DynamicTuple> for DynamicTupleStruct {
 }
 
 /// Representing [`TupleStruct`]`, used to dynamically modify the type of data and information.
-/// 
-/// Dynamic types are special in that their TypeInfo is [`OpaqueInfo`], 
+///
+/// Dynamic types are special in that their TypeInfo is [`OpaqueInfo`],
 /// but other APIs are consistent with the type they represent, such as [`reflect_kind`], [`reflect_ref`]
-/// 
+///
 /// [`reflect_kind`]: crate::Reflect::reflect_kind
 /// [`reflect_ref`]: crate::Reflect::reflect_ref
 #[derive(Default)]
@@ -67,15 +68,22 @@ impl Typed for DynamicTupleStruct {
 impl DynamicTupleStruct {
     #[inline]
     pub const fn new() -> Self {
-        Self { tuple_struct_info: None, fields: Vec::new() }
+        Self {
+            tuple_struct_info: None,
+            fields: Vec::new(),
+        }
     }
 
     /// Sets the [`TypeInfo`] to be represented by this `DynamicTupleStruct`.
     #[inline]
     pub fn set_type_info(&mut self, tuple_struct_info: Option<&'static TypeInfo>) {
         match tuple_struct_info {
-            Some(TypeInfo::TupleStruct(_)) | None => {},
-            _ => { panic!("Call `DynamicTupleStruct::set_type_info`, but the input is not tuple-struct information or None.") },
+            Some(TypeInfo::TupleStruct(_)) | None => {}
+            _ => {
+                panic!(
+                    "Call `DynamicTupleStruct::set_type_info`, but the input is not tuple-struct information or None."
+                )
+            }
         }
 
         self.tuple_struct_info = tuple_struct_info;
@@ -208,9 +216,9 @@ pub trait TupleStruct: Reflect {
     }
 
     /// Get actual [`TupleStructInfo`] of underlying types.
-    /// 
+    ///
     /// If it is a dynamic type, it will return `None`.
-    /// 
+    ///
     /// If it is not a dynamic type and the returned value is not `None` or `TupleStructInfo`, it will panic.
     /// (If you want to implement dynamic types yourself, please return None.)
     #[inline]
@@ -219,7 +227,7 @@ pub trait TupleStruct: Reflect {
     }
 
     /// Get the [`TupleStructInfo`] of representation.
-    /// 
+    ///
     /// Normal types return their own information,
     /// while dynamic types return `None`` if they do not represent an object
     #[inline]
@@ -327,7 +335,7 @@ impl GetTupleStructField for dyn TupleStruct {
 /// Avoid compilation overhead when implementing multiple types.
 #[inline(never)]
 pub fn tuple_try_apply(x: &mut dyn TupleStruct, y: &dyn Reflect) -> Result<(), ApplyError> {
-    let y= y.reflect_ref().as_tuple_struct()?;
+    let y = y.reflect_ref().as_tuple_struct()?;
 
     for (idx, y_field) in y.iter_fields().enumerate() {
         if let Some(field) = x.field_mut(idx) {
@@ -365,7 +373,7 @@ pub fn tuple_struct_partial_eq(x: &dyn TupleStruct, y: &dyn Reflect) -> Option<b
 }
 
 /// The default debug formatter for [`Tuple`] types.
-/// 
+///
 /// Avoid compilation overhead when implementing multiple types.
 #[inline(never)]
 pub(crate) fn tuple_struct_debug(

@@ -67,13 +67,6 @@ pub(crate) fn from_reflect_(vct_reflect_path: &syn::Path) -> TokenStream {
 }
 
 #[inline(always)]
-pub(crate) fn reflect_alias_(vct_reflect_path: &syn::Path) -> TokenStream {
-    quote! {
-        #vct_reflect_path::ReflectAlias
-    }
-}
-
-#[inline(always)]
 pub(crate) fn reflect_hasher_(vct_reflect_path: &syn::Path) -> TokenStream {
     quote! {
         #vct_reflect_path::reflect_hasher

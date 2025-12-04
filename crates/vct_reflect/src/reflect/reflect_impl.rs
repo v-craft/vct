@@ -1,6 +1,6 @@
 use crate::{
     cell::NonGenericTypeInfoCell,
-    info::{DynamicTyped, OpaqueInfo, TypeInfo, TypePath, Typed, DynamicTypePath, ReflectKind},
+    info::{DynamicTypePath, DynamicTyped, OpaqueInfo, ReflectKind, TypeInfo, TypePath, Typed},
     ops::{
         ApplyError, ReflectCloneError, ReflectMut, ReflectOwned, ReflectRef, array_debug,
         enum_debug, list_debug, map_debug, set_debug, struct_debug, tuple_debug,
@@ -8,8 +8,8 @@ use crate::{
     },
 };
 use alloc::{
-    boxed::Box,
     borrow::{Cow, ToOwned},
+    boxed::Box,
 };
 use core::{
     any::{Any, TypeId},
@@ -18,9 +18,9 @@ use core::{
 
 pub trait Reflect: DynamicTypePath + DynamicTyped + Send + Sync + Any {
     /// Casts this type to a fully-reflected value.
-    /// 
+    ///
     /// # Normal Impl
-    /// 
+    ///
     /// ```ignore
     /// #[inline]
     /// fn as_reflect(&self) -> &dyn Reflect {
@@ -30,9 +30,9 @@ pub trait Reflect: DynamicTypePath + DynamicTyped + Send + Sync + Any {
     fn as_reflect(&self) -> &dyn Reflect;
 
     /// Casts this type to a mutable, fully-reflected value.
-    /// 
+    ///
     /// # Normal Impl
-    /// 
+    ///
     /// ```ignore
     /// #[inline]
     /// fn as_reflect_mut(&mut self) -> &mut dyn Reflect {
@@ -42,9 +42,9 @@ pub trait Reflect: DynamicTypePath + DynamicTyped + Send + Sync + Any {
     fn as_reflect_mut(&mut self) -> &mut dyn Reflect;
 
     /// Casts this type to a boxed, fully-reflected value.
-    /// 
+    ///
     /// # Normal Impl
-    /// 
+    ///
     /// ```ignore
     /// #[inline]
     /// fn into_reflect(self: Box<Self>) -> Box<dyn Reflect> {
@@ -54,12 +54,12 @@ pub trait Reflect: DynamicTypePath + DynamicTyped + Send + Sync + Any {
     fn into_reflect(self: Box<Self>) -> Box<dyn Reflect>;
 
     /// Performs a type-checked assignment of a reflected value to this value.
-    /// 
+    ///
     /// This is a fixed type set, efficient but the type cannot be incorrect.
     /// Loose assignment, please use [`Reflect::try_apply`].
-    /// 
+    ///
     /// # Normal Impl
-    /// 
+    ///
     /// ```ignore
     /// #[inline]
     /// fn set(&mut self, value: Box<dyn Reflect>) -> Result<(), Box<dyn Reflect>> {

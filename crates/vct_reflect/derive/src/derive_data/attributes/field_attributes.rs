@@ -1,5 +1,4 @@
-use proc_macro2::Span;
-use syn::{Attribute, Path, Meta, Token, MacroDelimiter, MetaList, parse::ParseStream, MetaNameValue};
+use syn::{Attribute, Meta, Token, MacroDelimiter, MetaList, parse::ParseStream, MetaNameValue};
 
 use crate::{
     REFLECT_ATTRIBUTE_NAME,
@@ -9,45 +8,8 @@ use crate::{
 mod kw{
     syn::custom_keyword!(docs);
     syn::custom_keyword!(ignore);
-    syn::custom_keyword!(skip_serde);
 }
 
-/// Stores data about if the field should be visible via the Reflect and serialization interfaces
-#[derive(Default, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum FieldIgnoreKind {
-    /// Don't ignore, appear to all systems
-    #[default]
-    None,
-    /// Ignore when serializing but not when reflecting
-    Serde,
-    /// Ignore both when serializing and reflecting
-    All,
-}
-
-impl FieldIgnoreKind {
-    pub fn is_active(self) -> bool {
-        self != FieldIgnoreKind::All
-    }
-
-    pub fn is_ignored(self) -> bool {
-        self == FieldIgnoreKind::All
-    }
-}
-
-/// Controls how the default value is determined for a field.
-#[derive(Default, Clone)]
-pub(crate) enum FieldDefaultKind {
-    /// Field is required.
-    #[default]
-    None,
-    /// Field can be defaulted using `Default::default()`.
-    Trait,
-    /// Field can be created using the given function name.
-    ///
-    /// This assumes the function is in scope, is callable with zero arguments,
-    /// and returns the expected type.
-    Custom(Path, Span),
-}
 
 #[derive(Default, Clone)]
 pub(crate) struct FieldAttributes {
@@ -56,9 +18,7 @@ pub(crate) struct FieldAttributes {
     /// Custom docs: `///`, `#[doc = ""]` or `#[reflect(docs = "")]`
     pub docs: ReflectDocs,
     /// Determines how this field should be ignored if at all.
-    pub ignore: FieldIgnoreKind,
-    // /// Sets the default behavior of this field.
-    // pub default: FieldDefaultKind,
+    pub ignore: bool,
 }
 
 impl FieldAttributes {
@@ -113,6 +73,8 @@ impl FieldAttributes {
             self.parse_custom_attribute(input)
         } else if lookahead.peek(kw::docs) {
             self.parse_docs(input)
+        } else if lookahead.peek(kw::ignore) {
+            self.parse_ignore(input)
         } else {
             Err(lookahead.error())
         }
@@ -131,23 +93,10 @@ impl FieldAttributes {
     }
 
     fn parse_ignore(&mut self, input: ParseStream) -> syn::Result<()> {
-        if self.ignore != FieldIgnoreKind::None {
-            return Err(input.error("Only one of [`ignore`, `skip_serde`] is allowed."))
-        }
         input.parse::<kw::ignore>()?;
-        self.ignore = FieldIgnoreKind::All;
+        self.ignore = true;
         Ok(())
     }
-
-    fn parse_skip_serde(&mut self, input: ParseStream) -> syn::Result<()> {
-        if self.ignore != FieldIgnoreKind::None {
-            return Err(input.error("Only one of [`ignore`, `skip_serde`] is allowed."))
-        }
-        input.parse::<kw::ignore>()?;
-        self.ignore = FieldIgnoreKind::Serde;
-        Ok(())
-    }
-
 }
 
 

@@ -53,23 +53,9 @@ pub(crate) fn impl_trait_type_path(meta: &ReflectMeta) -> TokenStream {
     let module_path = wrap_in_option(parser.module_path().map(StringExpr::into_borrowed));
     let crate_name = wrap_in_option(parser.crate_name().map(StringExpr::into_borrowed));
 
-    let primitive_assert = if let TypePathParser::Primitive(_) = parser {
-        quote! {
-            const _: () = {
-                mod __private_scope {
-                    type AssertPrimitiveTypePath = #real_ident;
-                } // Compiles if it can be named when there are no imports.
-            };
-        }
-    } else {
-        crate::utils::empty()
-    };
-
     let (impl_generics, ty_generics, where_clause) = parser.generics().split_for_impl();
 
     quote! {
-        #primitive_assert
-
         impl #impl_generics #trait_type_path_ for #real_ident #ty_generics #where_clause {
             #inline_flag
             fn type_path() -> &'static str {

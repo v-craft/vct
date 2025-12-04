@@ -100,7 +100,7 @@ impl<'a> ReflectStruct<'a> {
     pub fn active_fields(&self) -> impl Iterator<Item = &StructField<'a>> {
         self.fields()
             .iter()
-            .filter(|field| field.attrs.ignore.is_active())
+            .filter(|field| !field.attrs.ignore)
     }
 
     // /// Get an iterator of fields which are ignored by the reflection API

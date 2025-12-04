@@ -4,8 +4,8 @@ use core::{
 };
 
 use crate::info::{
-    ArrayInfo, EnumInfo, ListInfo, MapInfo, OpaqueInfo, SetInfo, StructInfo, TupleInfo,
-    TupleStructInfo, CustomAttributes, Type, TypePathTable, Generics,
+    ArrayInfo, CustomAttributes, EnumInfo, Generics, ListInfo, MapInfo, OpaqueInfo, SetInfo,
+    StructInfo, TupleInfo, TupleStructInfo, Type, TypePathTable,
 };
 
 /// A Enum for representing the kind of type
@@ -152,7 +152,6 @@ impl TypeInfo {
         }
     }
 
-
     pub fn generics(&self) -> &Generics {
         // Not inline: Avoid recursive inline
         match self {
@@ -167,7 +166,6 @@ impl TypeInfo {
             Self::Opaque(info) => info.generics(),
         }
     }
-
 
     pub fn custom_attributes(&self) -> Option<&CustomAttributes> {
         // Not inline: Avoid recursive inline

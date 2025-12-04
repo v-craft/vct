@@ -33,7 +33,6 @@ mod kw {
     syn::custom_keyword!(type_path);
     syn::custom_keyword!(auto_register);
     syn::custom_keyword!(docs);
-    syn::custom_keyword!(alias);
 }
 
 #[derive(Default, Clone)]
@@ -142,8 +141,6 @@ impl TypeAttributes {
             self.parse_trait_tuple(input)
         } else if lookahead.peek(kw::Enum) {
             self.parse_trait_enum(input)
-        } else if lookahead.peek(kw::alias) {
-            self.parse_alias(input)
         } else {
             Err(lookahead.error())
         }
@@ -426,22 +423,6 @@ impl TypeAttributes {
         // #[reflect(docs = "...")]
         let pair = input.parse::<MetaNameValue>()?;
         self.docs.parse_custom_docs(&pair)
-    }
-
-    fn parse_alias(&mut self, input: ParseStream) -> syn::Result<()> {
-        // #[reflect(alias = ...)]
-        let pair = input.parse::<MetaNameValue>()?;
-
-        if let Expr::Path(ExprPath{path, ..}) = &pair.value {
-            self.alias =  Some(TypePath {
-                qself: None,
-                path: path.clone(),
-            });
-        } else {
-            return Err(syn::Error::new(pair.value.span(), "Expected a type path."));
-        }
-        
-        Ok(())
     }
 
 }

@@ -1,7 +1,3 @@
-use crate::{
-    Reflect,
-    info::{TypeInfo, Typed},
-};
 use alloc::boxed::Box;
 use core::{
     any::{Any, TypeId},
@@ -9,6 +5,8 @@ use core::{
     ops::{Deref, DerefMut},
 };
 use vct_utils::collections::TypeIdMap;
+
+use crate::info::{TypeInfo, Typed};
 
 pub trait TypeTrait: Any + Send + Sync {
     fn clone_type_trait(&self) -> Box<dyn TypeTrait>;
@@ -48,7 +46,7 @@ pub struct TypeTraits {
 
 impl TypeTraits {
     #[inline]
-    pub fn of<T: Reflect + Typed>() -> Self {
+    pub fn of<T: Typed>() -> Self {
         Self {
             trait_map: TypeIdMap::new(),
             type_info: T::type_info(),

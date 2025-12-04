@@ -19,6 +19,8 @@ pub(crate) struct ResultFP;
 pub(crate) struct PartialEqFP;
 /// Full Path (FP) for [`Hash`](core::hash::Hash)
 pub(crate) struct HashFP;
+/// Full Path (FP) for [`Hasher`](core::hash::Hasher)
+pub(crate) struct HasherFP;
 /// Full Path (FP) for [`Debug`](core::fmt::Debug)
 pub(crate) struct DebugFP;
 
@@ -73,6 +75,12 @@ impl ToTokens for PartialEqFP {
 impl ToTokens for HashFP {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         quote!(::core::hash::Hash).to_tokens(tokens);
+    }
+}
+
+impl ToTokens for HasherFP {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        quote!(::core::hash::Hasher).to_tokens(tokens);
     }
 }
 

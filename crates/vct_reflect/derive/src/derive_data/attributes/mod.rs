@@ -14,6 +14,4 @@ mod type_attributes;
 pub(crate) use type_attributes::TypeAttributes;
 
 mod field_attributes;
-pub(crate) use field_attributes::{
-    FieldAttributes, FieldDefaultKind, FieldIgnoreKind,
-};
+pub(crate) use field_attributes::FieldAttributes;

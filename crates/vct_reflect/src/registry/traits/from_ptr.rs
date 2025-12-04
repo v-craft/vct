@@ -1,9 +1,7 @@
 use core::any::TypeId;
 use vct_ptr::{Ptr, PtrMut};
 
-use crate::{
-    Reflect, registry::FromType,
-};
+use crate::{Reflect, info::Typed, registry::FromType};
 
 #[derive(Clone)]
 pub struct TypeTraitFromPtr {
@@ -67,7 +65,7 @@ impl TypeTraitFromPtr {
 }
 
 #[expect(unsafe_code, reason = "Cast pointers to references is unsafe.")]
-impl<T: Reflect> FromType<T> for TypeTraitFromPtr {
+impl<T: Typed + Reflect> FromType<T> for TypeTraitFromPtr {
     fn from_type() -> Self {
         TypeTraitFromPtr {
             type_id: TypeId::of::<T>(),
@@ -84,4 +82,3 @@ impl<T: Reflect> FromType<T> for TypeTraitFromPtr {
         }
     }
 }
-

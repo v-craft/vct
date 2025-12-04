@@ -18,10 +18,7 @@ pub enum ApplyError {
         field_name: String,
     },
     /// Tried to apply incompatible types.
-    MismatchedTypes {
-        from_type: String,
-        to_type: String,
-    },
+    MismatchedTypes { from_type: String, to_type: String },
     /// Attempted to apply an [array-like] type to another of different size, e.g. a [u8; 4] to [u8; 3].
     DifferentSize { from_size: usize, to_size: usize },
     /// The enum we tried to apply to didn't contain a variant with the give name.

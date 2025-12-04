@@ -1,7 +1,7 @@
 use crate::{
     Reflect,
     cell::NonGenericTypeInfoCell,
-    info::{ListInfo, ReflectKind, TypeInfo, TypePath, Typed, OpaqueInfo},
+    info::{ListInfo, OpaqueInfo, ReflectKind, TypeInfo, TypePath, Typed},
     ops::{ApplyError, ReflectMut, ReflectOwned, ReflectRef},
     reflect::impl_cast_reflect_fn,
     reflect_hasher,
@@ -13,10 +13,10 @@ use core::{
 };
 
 /// Representing [`List`], used to dynamically modify the type of data and information.
-/// 
-/// Dynamic types are special in that their TypeInfo is [`OpaqueInfo`], 
+///
+/// Dynamic types are special in that their TypeInfo is [`OpaqueInfo`],
 /// but other APIs are consistent with the type they represent, such as [`reflect_kind`], [`reflect_ref`]
-/// 
+///
 /// [`reflect_kind`]: crate::Reflect::reflect_kind
 /// [`reflect_ref`]: crate::Reflect::reflect_ref
 #[derive(Default)]
@@ -62,18 +62,35 @@ impl Typed for DynamicList {
 impl DynamicList {
     #[inline]
     pub const fn new() -> Self {
-        Self { list_info: None, values: Vec::new() }
+        Self {
+            list_info: None,
+            values: Vec::new(),
+        }
     }
+
+    /// See [`Vec::with_capacity`]
+    #[inline]
+    pub fn with_capacity(capcity: usize) -> Self {
+        Self {
+            list_info: None,
+            values: Vec::with_capacity(capcity),
+        }
+    }
+
     /// Sets the [`TypeInfo`] to be represented by this `DynamicList`.
-    /// 
+    ///
     /// # Panic
-    /// 
+    ///
     /// If the input is not list info or None.
     #[inline]
     pub fn set_type_info(&mut self, list_info: Option<&'static TypeInfo>) {
         match list_info {
-            Some(TypeInfo::List(_)) | None => {},
-            _ => { panic!("Call `DynamicList::set_type_info`, but the input is not list information or None.") },
+            Some(TypeInfo::List(_)) | None => {}
+            _ => {
+                panic!(
+                    "Call `DynamicList::set_type_info`, but the input is not list information or None."
+                )
+            }
         }
 
         self.list_info = list_info;
@@ -148,7 +165,6 @@ impl Reflect for DynamicList {
     }
 }
 
-
 impl fmt::Debug for DynamicList {
     #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -160,7 +176,10 @@ impl<T: Reflect> FromIterator<T> for DynamicList {
     fn from_iter<I: IntoIterator<Item = T>>(values: I) -> Self {
         Self {
             list_info: None,
-            values: values.into_iter().map(|field| Box::new(field).into_reflect()).collect()
+            values: values
+                .into_iter()
+                .map(|field| Box::new(field).into_reflect())
+                .collect(),
         }
     }
 }
@@ -253,7 +272,7 @@ pub trait List: Reflect {
     fn drain(&mut self) -> Vec<Box<dyn Reflect>>;
 
     /// Creates a new [`DynamicList`] from this list.
-    /// 
+    ///
     /// This function will replace all content with dynamic types, except for `Opaque`.
     fn to_dynamic_list(&self) -> DynamicList {
         DynamicList {
@@ -263,9 +282,9 @@ pub trait List: Reflect {
     }
 
     /// Get actual [`ListInfo`] of underlying types.
-    /// 
+    ///
     /// If it is a dynamic type, it will return `None`.
-    /// 
+    ///
     /// If it is not a dynamic type and the returned value is not `None` or `ListInfo`, it will panic.
     /// (If you want to implement dynamic types yourself, please return None.)
     #[inline]
@@ -274,7 +293,7 @@ pub trait List: Reflect {
     }
 
     /// Get the [`ListInfo`] of representation.
-    /// 
+    ///
     /// Normal types return their own information,
     /// while dynamic types return `None`` if they do not represent an object
     #[inline]
@@ -371,8 +390,6 @@ impl List for DynamicList {
     }
 }
 
-
-
 /// A function used to assist in the implementation of `reflect_partial_eq`
 ///
 /// Avoid compilation overhead when implementing multiple types.
@@ -432,7 +449,7 @@ pub fn list_hash(x: &dyn List) -> Option<u64> {
 }
 
 /// The default debug formatter for [`List`] types.
-/// 
+///
 /// Avoid compilation overhead when implementing multiple types.
 #[inline(never)]
 pub(crate) fn list_debug(dyn_list: &dyn List, f: &mut fmt::Formatter<'_>) -> fmt::Result {

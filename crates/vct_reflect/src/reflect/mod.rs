@@ -16,6 +16,3 @@ pub use from_reflect::FromReflect;
 
 mod reflectable;
 pub use reflectable::Reflectable;
-
-mod reflect_alias;
-pub use reflect_alias::ReflectAlias;

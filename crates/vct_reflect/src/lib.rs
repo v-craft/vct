@@ -10,11 +10,10 @@ pub mod cell;
 pub mod info;
 pub mod ops;
 pub mod registry;
+pub mod serde;
 
 mod reflect;
-pub use reflect::{
-    FromReflect, Reflect, ReflectAlias, Reflectable, reflect_hasher,
-};
+pub use reflect::{FromReflect, Reflect, Reflectable, reflect_hasher};
 
 mod impls;
 

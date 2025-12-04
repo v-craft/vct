@@ -5,18 +5,19 @@ use core::{
 };
 
 use crate::{
-    Reflect, cell::NonGenericTypeInfoCell, 
-    info::{ArrayInfo, OpaqueInfo, ReflectKind, TypeInfo, TypePath, Typed}, 
-    ops::{ApplyError, ReflectMut, ReflectOwned, ReflectRef}, 
-    reflect::impl_cast_reflect_fn, reflect_hasher
+    Reflect,
+    cell::NonGenericTypeInfoCell,
+    info::{ArrayInfo, OpaqueInfo, ReflectKind, TypeInfo, TypePath, Typed},
+    ops::{ApplyError, ReflectMut, ReflectOwned, ReflectRef},
+    reflect::impl_cast_reflect_fn,
+    reflect_hasher,
 };
 
-
 /// Representing [`Array`]`, used to dynamically modify the type of data and information.
-/// 
-/// Dynamic types are special in that their TypeInfo is [`OpaqueInfo`], 
+///
+/// Dynamic types are special in that their TypeInfo is [`OpaqueInfo`],
 /// but other APIs are consistent with the type they represent, such as [`reflect_kind`], [`reflect_ref`]
-/// 
+///
 /// [`reflect_kind`]: crate::Reflect::reflect_kind
 /// [`reflect_ref`]: crate::Reflect::reflect_ref
 pub struct DynamicArray {
@@ -65,17 +66,21 @@ impl DynamicArray {
     }
 
     /// Sets the [`TypeInfo`] to be represented by this `DynamicArray`.
-    /// 
+    ///
     /// # Panic
-    /// 
+    ///
     /// If the input is not array info or None.
     #[inline]
     pub fn set_type_info(&mut self, array_info: Option<&'static TypeInfo>) {
         match array_info {
-            Some(TypeInfo::Array(_)) | None => {},
-            _ => { panic!("Call `DynamicArray::set_type_info`, but the input is not array information or None.") },
+            Some(TypeInfo::Array(_)) | None => {}
+            _ => {
+                panic!(
+                    "Call `DynamicArray::set_type_info`, but the input is not array information or None."
+                )
+            }
         }
-        
+
         self.array_info = array_info;
     }
 }
@@ -150,7 +155,10 @@ impl<T: Reflect> FromIterator<T> for DynamicArray {
     fn from_iter<I: IntoIterator<Item = T>>(values: I) -> Self {
         Self {
             array_info: None,
-            values: values.into_iter().map(|value| Box::new(value).into_reflect()).collect(),
+            values: values
+                .into_iter()
+                .map(|value| Box::new(value).into_reflect())
+                .collect(),
         }
     }
 }
@@ -220,9 +228,9 @@ pub trait Array: Reflect {
     }
 
     /// Get actual [`ArrayInfo`] of underlying types.
-    /// 
+    ///
     /// If it is a dynamic type, it will return `None`.
-    /// 
+    ///
     /// If it is not a dynamic type and the returned value is not `None` or `ArrayInfo`, it will panic.
     /// (If you want to implement dynamic types yourself, please return None.)
     #[inline]
@@ -231,7 +239,7 @@ pub trait Array: Reflect {
     }
 
     /// Get the [`ArrayInfo`] of representation.
-    /// 
+    ///
     /// Normal types return their own information,
     /// while dynamic types return `None`` if they do not represent an object
     #[inline]
@@ -316,7 +324,7 @@ impl Array for DynamicArray {
 ///
 /// Avoid compilation overhead when implementing multiple types.
 #[inline(never)]
-pub fn array_try_apply(x: &mut dyn Array, y: &dyn Reflect) ->Result<(), ApplyError> {
+pub fn array_try_apply(x: &mut dyn Array, y: &dyn Reflect) -> Result<(), ApplyError> {
     let y = y.reflect_ref().as_array()?;
 
     if x.len() != y.len() {

@@ -17,6 +17,16 @@ pub(crate) enum ReflectDerive<'a> {
 
 
 impl<'a> ReflectDerive<'a> {
+    // pub fn meta(&self) -> &ReflectMeta<'a> {
+    //     match self {
+    //         ReflectDerive::Struct(reflect_struct) => reflect_struct.meta(),
+    //         ReflectDerive::TupleStruct(reflect_struct) => reflect_struct.meta(),
+    //         ReflectDerive::UnitStruct(reflect_meta) => reflect_meta,
+    //         ReflectDerive::Enum(reflect_enum) => reflect_enum.meta(),
+    //         ReflectDerive::Opaque(reflect_meta) => reflect_meta,
+    //     }
+    // }
+
     pub fn from_input(input: &'a DeriveInput, source: ImplSourceKind) -> syn::Result<Self> {
         let type_attributes = TypeAttributes::parse_attrs(&input.attrs)?;
 
@@ -76,7 +86,7 @@ impl<'a> ReflectDerive<'a> {
         for (declaration_index, field) in fields.iter().enumerate() {
             let attrs = FieldAttributes::parse_attrs(&field.attrs)?;
 
-            let reflection_index = if attrs.ignore.is_ignored() {
+            let reflection_index = if attrs.ignore {
                 None
             } else {
                 active_index += 1;
@@ -113,7 +123,5 @@ impl<'a> ReflectDerive<'a> {
 
         Ok(res)
     }
-
-
-
+    
 }

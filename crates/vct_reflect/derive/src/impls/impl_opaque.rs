@@ -172,7 +172,7 @@ fn get_opaque_partial_eq_impl(meta: &ReflectMeta) -> proc_macro2::TokenStream  {
 }
 
 fn get_opaque_hash_impl(meta: &ReflectMeta) -> proc_macro2::TokenStream {
-    use crate::path::fp::{OptionFP, HashFP};
+    use crate::path::fp::{OptionFP, HashFP, HasherFP};
     let vct_reflect_path = meta.vct_reflect_path();
     let reflect_hasher = crate::path::reflect_hasher_(vct_reflect_path);
 
@@ -184,7 +184,7 @@ fn get_opaque_hash_impl(meta: &ReflectMeta) -> proc_macro2::TokenStream {
                 fn reflect_hash(&self) -> #OptionFP<u64> {
                     let mut hasher = #reflect_hasher();
                     <Self as #HashFP>::hash(self, &mut hasher);
-                    #OptionFP::Some(hasher.finish())
+                    #OptionFP::Some(#HasherFP::finish(&hasher))
                 }
             }
         },

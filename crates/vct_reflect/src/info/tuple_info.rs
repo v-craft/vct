@@ -3,7 +3,11 @@ use vct_os::sync::Arc;
 
 use crate::{
     info::{
-        CustomAttributes, Generics, Type, TypePath, UnnamedField, attributes::{impl_custom_attributes_fn, impl_with_custom_attributes}, docs_macro::impl_docs_fn, generics::impl_generic_fn, type_struct::impl_type_fn
+        CustomAttributes, Generics, Type, TypePath, UnnamedField,
+        attributes::{impl_custom_attributes_fn, impl_with_custom_attributes},
+        docs_macro::impl_docs_fn,
+        generics::impl_generic_fn,
+        type_struct::impl_type_fn,
     },
     ops::Tuple,
 };
@@ -29,7 +33,7 @@ impl TupleInfo {
     /// Create a new container
     ///
     /// The order of fields inside the container is fixed
-    /// 
+    ///
     /// During tuple implementation, there may be a large number of generic expansions.
     /// So inlining is prohibited here.
     #[inline(never)]

@@ -1,7 +1,7 @@
 use crate::{
     Reflect,
     cell::NonGenericTypeInfoCell,
-    info::{MapInfo, ReflectKind, TypeInfo, TypePath, Typed, OpaqueInfo},
+    info::{MapInfo, OpaqueInfo, ReflectKind, TypeInfo, TypePath, Typed},
     ops::{ApplyError, ReflectMut, ReflectOwned, ReflectRef},
     reflect::impl_cast_reflect_fn,
 };
@@ -10,10 +10,10 @@ use core::fmt;
 use vct_utils::collections::{HashTable, hash_table};
 
 /// Representing [`Map`], used to dynamically modify the type of data and information.
-/// 
-/// Dynamic types are special in that their TypeInfo is [`OpaqueInfo`], 
+///
+/// Dynamic types are special in that their TypeInfo is [`OpaqueInfo`],
 /// but other APIs are consistent with the type they represent, such as [`reflect_kind`], [`reflect_ref`]
-/// 
+///
 /// [`reflect_kind`]: crate::Reflect::reflect_kind
 /// [`reflect_ref`]: crate::Reflect::reflect_ref
 #[derive(Default)]
@@ -55,19 +55,26 @@ impl Typed for DynamicMap {
 impl DynamicMap {
     #[inline]
     pub const fn new() -> DynamicMap {
-        Self { map_info: None, hash_table: HashTable::new() }
+        Self {
+            map_info: None,
+            hash_table: HashTable::new(),
+        }
     }
 
     /// Sets the [`TypeInfo`] to be represented by this `DynamicMap`.
-    /// 
+    ///
     /// # Panic
-    /// 
+    ///
     /// If the input is not list info or None.
     #[inline]
     pub fn set_type_info(&mut self, map_info: Option<&'static TypeInfo>) {
         match map_info {
-            Some(TypeInfo::Map(_)) | None => {},
-            _ => { panic!("Call `DynamicMap::set_type_info`, but the input is not map information or None.") },
+            Some(TypeInfo::Map(_)) | None => {}
+            _ => {
+                panic!(
+                    "Call `DynamicMap::set_type_info`, but the input is not map information or None."
+                )
+            }
         }
 
         self.map_info = map_info;
@@ -159,9 +166,7 @@ impl Reflect for DynamicMap {
         map_debug(self, f)?;
         write!(f, ")")
     }
-
 }
-
 
 impl fmt::Debug for DynamicMap {
     #[inline]
@@ -171,9 +176,7 @@ impl fmt::Debug for DynamicMap {
 }
 
 impl FromIterator<(Box<dyn Reflect>, Box<dyn Reflect>)> for DynamicMap {
-    fn from_iter<I: IntoIterator<Item = (Box<dyn Reflect>, Box<dyn Reflect>)>>(
-        items: I,
-    ) -> Self {
+    fn from_iter<I: IntoIterator<Item = (Box<dyn Reflect>, Box<dyn Reflect>)>>(items: I) -> Self {
         let mut this = DynamicMap::new();
         for (key, value) in items.into_iter() {
             this.insert_boxed(key, value);
@@ -282,9 +285,9 @@ pub trait Map: Reflect {
     fn remove(&mut self, key: &dyn Reflect) -> Option<Box<dyn Reflect>>;
 
     /// Get actual [`MapInfo`] of underlying types.
-    /// 
+    ///
     /// If it is a dynamic type, it will return `None`.
-    /// 
+    ///
     /// If it is not a dynamic type and the returned value is not `None` or `MapInfo`, it will panic.
     /// (If you want to implement dynamic types yourself, please return None.)
     #[inline]
@@ -293,7 +296,7 @@ pub trait Map: Reflect {
     }
 
     /// Get the [`MapInfo`] of representation.
-    /// 
+    ///
     /// Normal types return their own information,
     /// while dynamic types return `None`` if they do not represent an object
     #[inline]
@@ -388,7 +391,6 @@ impl Map for DynamicMap {
     }
 }
 
-
 /// A function used to assist in the implementation of `reflect_partial_eq`
 ///
 /// Avoid compilation overhead when implementing multiple types.
@@ -435,7 +437,7 @@ pub fn map_partial_eq(x: &dyn Map, y: &dyn Reflect) -> Option<bool> {
 }
 
 /// The default debug formatter for [`Map`] types.
-/// 
+///
 /// Avoid compilation overhead when implementing multiple types.
 #[inline(never)]
 pub(crate) fn map_debug(dyn_map: &dyn Map, f: &mut fmt::Formatter<'_>) -> fmt::Result {
