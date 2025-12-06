@@ -19,7 +19,7 @@ pub use tuple_struct_impl::{
 };
 
 mod tuple_impl;
-pub(crate) use tuple_impl::tuple_debug; // Only used for `PartialReflect::reflect_debug`
+pub(crate) use tuple_impl::{tuple_debug, tuple_hash}; // Only used for `PartialReflect::reflect_debug`
 pub use tuple_impl::{
     DynamicTuple, GetTupleField, Tuple, TupleFieldIter, tuple_partial_eq, tuple_try_apply,
 };

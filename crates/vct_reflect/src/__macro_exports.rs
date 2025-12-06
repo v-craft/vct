@@ -2,7 +2,7 @@
 //!
 //! Users should not use any content here.
 
-use crate::{Reflect, info::{FieldId, TypePath}, ops::ReflectCloneError};
+use crate::{Reflect, info::TypePath, ops::ReflectCloneError};
 
 pub mod alloc_utils {
     // When generating code, using `std` or `alloc` directly is unsafe.
@@ -30,16 +30,14 @@ pub mod alloc_utils {
     }
 }
 
-pub fn reflect_clone_field<T: Reflect + TypePath>(source: &T, id: FieldId) -> Result<T, ReflectCloneError> {
+pub fn reflect_clone_field<T: Reflect + TypePath>(source: &T) -> Result<T, ReflectCloneError> {
     if let Ok(t) = source.reflect_clone() 
         && let Ok(val) = t.take::<T>()
     {
         Ok(val)
     } else {
-        Err(ReflectCloneError::FieldNotCloneable {
-            type_path: T::type_path().into(),
-            field: id,
-            variant: None,
+        Err(ReflectCloneError::NotImplemented {
+            type_path: T::type_path().into()
         })
     }
 }

@@ -8,12 +8,12 @@ pub(crate) fn type_path_(vct_reflect_path: &syn::Path) -> TokenStream {
     }
 }
 
-#[inline(always)]
-pub(crate) fn type_path_table_(vct_reflect_path: &syn::Path) -> TokenStream {
-    quote! {
-        #vct_reflect_path::info::TypePathTable
-    }
-}
+// #[inline(always)]
+// pub(crate) fn type_path_table_(vct_reflect_path: &syn::Path) -> TokenStream {
+//     quote! {
+//         #vct_reflect_path::info::TypePathTable
+//     }
+// }
 
 #[inline(always)]
 pub(crate) fn dynamic_type_path_(vct_reflect_path: &syn::Path) -> TokenStream {
@@ -22,12 +22,12 @@ pub(crate) fn dynamic_type_path_(vct_reflect_path: &syn::Path) -> TokenStream {
     }
 }
 
-#[inline]
-pub(crate) fn type_(vct_reflect_path: &syn::Path) -> TokenStream {
-    quote! {
-        #vct_reflect_path::Type
-    }
-}
+// #[inline]
+// pub(crate) fn type_(vct_reflect_path: &syn::Path) -> TokenStream {
+//     quote! {
+//         #vct_reflect_path::Type
+//     }
+// }
 
 #[inline(always)]
 pub(crate) fn custom_attributes_(vct_reflect_path: &syn::Path) -> TokenStream {
@@ -106,40 +106,40 @@ pub(crate) fn tuple_struct_info_(vct_reflect_path: &syn::Path) -> TokenStream {
     }
 }
 
-#[inline(always)]
-pub(crate) fn tuple_info_(vct_reflect_path: &syn::Path) -> TokenStream {
-    quote! {
-        #vct_reflect_path::info::TupleInfo
-    }
-}
+// #[inline(always)]
+// pub(crate) fn tuple_info_(vct_reflect_path: &syn::Path) -> TokenStream {
+//     quote! {
+//         #vct_reflect_path::info::TupleInfo
+//     }
+// }
 
-#[inline(always)]
-pub(crate) fn list_info_(vct_reflect_path: &syn::Path) -> TokenStream {
-    quote! {
-        #vct_reflect_path::info::ListInfo
-    }
-}
+// #[inline(always)]
+// pub(crate) fn list_info_(vct_reflect_path: &syn::Path) -> TokenStream {
+//     quote! {
+//         #vct_reflect_path::info::ListInfo
+//     }
+// }
 
-#[inline(always)]
-pub(crate) fn array_info_(vct_reflect_path: &syn::Path) -> TokenStream {
-    quote! {
-        #vct_reflect_path::info::ArrayInfo
-    }
-}
+// #[inline(always)]
+// pub(crate) fn array_info_(vct_reflect_path: &syn::Path) -> TokenStream {
+//     quote! {
+//         #vct_reflect_path::info::ArrayInfo
+//     }
+// }
 
-#[inline(always)]
-pub(crate) fn map_info_(vct_reflect_path: &syn::Path) -> TokenStream {
-    quote! {
-        #vct_reflect_path::info::MapInfo
-    }
-}
+// #[inline(always)]
+// pub(crate) fn map_info_(vct_reflect_path: &syn::Path) -> TokenStream {
+//     quote! {
+//         #vct_reflect_path::info::MapInfo
+//     }
+// }
 
-#[inline(always)]
-pub(crate) fn set_info_(vct_reflect_path: &syn::Path) -> TokenStream {
-    quote! {
-        #vct_reflect_path::info::SetInfo
-    }
-}
+// #[inline(always)]
+// pub(crate) fn set_info_(vct_reflect_path: &syn::Path) -> TokenStream {
+//     quote! {
+//         #vct_reflect_path::info::SetInfo
+//     }
+// }
 
 #[inline(always)]
 pub(crate) fn struct_variant_info_(vct_reflect_path: &syn::Path) -> TokenStream {
@@ -190,12 +190,12 @@ pub(crate) fn reflect_kind_(vct_reflect_path: &syn::Path) -> TokenStream {
     }
 }
 
-#[inline(always)]
-pub(crate) fn reflect_kind_error_(vct_reflect_path: &syn::Path) -> TokenStream {
-    quote! {
-        #vct_reflect_path::info::ReflectKindError
-    }
-}
+// #[inline(always)]
+// pub(crate) fn reflect_kind_error_(vct_reflect_path: &syn::Path) -> TokenStream {
+//     quote! {
+//         #vct_reflect_path::info::ReflectKindError
+//     }
+// }
 
 #[inline(always)]
 pub(crate) fn type_info_(vct_reflect_path: &syn::Path) -> TokenStream {
@@ -204,19 +204,12 @@ pub(crate) fn type_info_(vct_reflect_path: &syn::Path) -> TokenStream {
     }
 }
 
-#[inline(always)]
-pub(crate) fn dynamic_typed_(vct_reflect_path: &syn::Path) -> TokenStream {
-    quote! {
-        #vct_reflect_path::info::DynamicTyped
-    }
-}
-
-#[inline(always)]
-pub(crate) fn maybe_typed_(vct_reflect_path: &syn::Path) -> TokenStream {
-    quote! {
-        #vct_reflect_path::info::MaybeTyped
-    }
-}
+// #[inline(always)]
+// pub(crate) fn dynamic_typed_(vct_reflect_path: &syn::Path) -> TokenStream {
+//     quote! {
+//         #vct_reflect_path::info::DynamicTyped
+//     }
+// }
 
 #[inline(always)]
 pub(crate) fn typed_(vct_reflect_path: &syn::Path) -> TokenStream {

@@ -13,8 +13,6 @@ pub(crate) fn impl_trait_reflect(
     reflect_hash_tokens: TokenStream,
     reflect_debug_tokens: TokenStream,
 ) -> TokenStream {
-    debug_assert!(meta.attrs().impl_switchs.impl_reflect);
-
     let vct_reflect_path = meta.vct_reflect_path();
 
     let reflect_ = crate::path::reflect_(vct_reflect_path);
@@ -85,3 +83,4 @@ pub(crate) fn impl_trait_reflect(
         }
     }
 }
+

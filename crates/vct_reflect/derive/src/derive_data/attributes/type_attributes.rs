@@ -1,3 +1,4 @@
+use proc_macro2::Span;
 use syn::{
     Attribute, Expr, ExprLit, Lit, MacroDelimiter, Meta, MetaList, MetaNameValue, Path, Token, parse::ParseStream, spanned::Spanned
 };
@@ -19,7 +20,7 @@ mod kw {
     syn::custom_keyword!(TupleStruct);
     syn::custom_keyword!(Tuple);
     syn::custom_keyword!(Enum);
-    syn::custom_keyword!(opaque);
+    syn::custom_keyword!(Opaque);
     syn::custom_keyword!(auto_register);
     syn::custom_keyword!(default);
     syn::custom_keyword!(clone);
@@ -28,9 +29,10 @@ mod kw {
     syn::custom_keyword!(partial_eq);
     syn::custom_keyword!(serialize);
     syn::custom_keyword!(deserialize);
-    syn::custom_keyword!(serde);
+    syn::custom_keyword!(serde);    // serialize + deserialize + auto_register
     syn::custom_keyword!(type_path);
     syn::custom_keyword!(docs);
+    syn::custom_keyword!(full);  // serde + clone + debug + hash + partial_eq + default
 }
 
 #[derive(Default, Clone)]
@@ -42,9 +44,9 @@ pub(crate) struct TypeAttributes {
     /// See: [`MethodImplFlags`]
     pub avail_traits: TraitAvailableFlags,
     /// By default, only types like `struct A;` are `Opaque`, but user can use `#[reflect(opaque)]` to enable it explicitly.
-    pub is_opaque: bool,
+    pub is_opaque: Option<Span>,
     /// Default is false, use `#[reflect(auto_register)]` or `#[reflect(auto_register)]` to enable i.
-    pub auto_register: bool,
+    pub auto_register: Option<Span>,
     /// Default is None, So the macro will be auto generated. Use `#[reflect(type_path = "...")]` to set it.
     pub type_path: Option<Path>,
     /// Default is Empty Docs,  Use `///`, `#[doc = ""]` or `#[reflect(docs = "")]` to set it, Can set multi-lines.
@@ -52,6 +54,20 @@ pub(crate) struct TypeAttributes {
 }
 
 impl TypeAttributes {
+    pub fn validity(&self) -> syn::Result<()> {
+        if let Some(span) = self.is_opaque {
+            if self.avail_traits.clone.is_none() {
+                if self.impl_switchs.impl_reflect || self.impl_switchs.impl_from_reflect {
+                    return Err(syn::Error::new(
+                        span, 
+                        "#[reflect(clone)] must be specified when auto impl `Reflect` for Opaque Type."
+                    ));
+                }
+            }
+        }
+        Ok(())
+    }
+
     /// try parse [`TypeAttributes`] from [`syn::Attribute`]
     pub fn parse_attrs(attrs: &[Attribute]) -> syn::Result<Self> {
         let mut type_attributes = TypeAttributes::default();
@@ -81,6 +97,20 @@ impl TypeAttributes {
         Ok(type_attributes)
     }
 
+    pub fn parse_stream(&mut self, stream: ParseStream) -> syn::Result<()> {
+        loop {
+            if stream.is_empty() {
+                break;
+            }
+            self.parse_inner_attribute(stream)?;
+            if stream.is_empty() {
+                break;
+            }
+            stream.parse::<Token![,]>()?;
+        }
+        Ok(())
+    }
+
     fn parse_meta_list(&mut self, meta: &MetaList) -> syn::Result<()> {
         meta.parse_args_with(|stream: ParseStream|{
             loop {
@@ -104,6 +134,8 @@ impl TypeAttributes {
             self.parse_custom_attribute(input)
         } else if lookahead.peek(kw::docs) {
             self.parse_docs(input)
+        } else if lookahead.peek(kw::full) {
+            self.parse_full(input)
         } else if lookahead.peek(kw::default) {
             self.parse_default(input)
         } else if lookahead.peek(kw::clone) {
@@ -120,7 +152,7 @@ impl TypeAttributes {
             self.parse_serialize(input)
         } else if lookahead.peek(kw::deserialize) {
             self.parse_deserialize(input)
-        } else if lookahead.peek(kw::opaque) {
+        } else if lookahead.peek(kw::Opaque) {
             self.parse_opaque(input)
         } else if lookahead.peek(kw::auto_register) {
             self.parse_auto_register(input)
@@ -162,74 +194,89 @@ impl TypeAttributes {
         self.docs.parse_custom_docs(&pair)
     }
 
+    // #[reflect(full)]
+    fn parse_full(&mut self, input: ParseStream) -> syn::Result<()> {
+        let s = input.parse::<kw::full>()?.span;
+        self.avail_traits.clone = Some(s);
+        self.avail_traits.default = Some(s);
+        self.avail_traits.debug = Some(s);
+        self.avail_traits.hash = Some(s);
+        self.avail_traits.partial_eq = Some(s);
+        self.avail_traits.serialize = Some(s);
+        self.avail_traits.deserialize = Some(s);
+        self.auto_register = Some(s);
+        Ok(())
+    }
+
     // #[reflect(default)]
     fn parse_default(&mut self, input: ParseStream) -> syn::Result<()> {
-        input.parse::<kw::default>()?;
-        self.avail_traits.default = true;
+        let s = input.parse::<kw::default>()?.span;
+        self.avail_traits.default = Some(s);
         Ok(())
     }
 
     // #[reflect(clone)]
     fn parse_clone(&mut self, input: ParseStream) -> syn::Result<()> {
-        input.parse::<kw::clone>()?;
-        self.avail_traits.clone = true;
+        let s = input.parse::<kw::clone>()?.span;
+        self.avail_traits.clone = Some(s);
         Ok(())
     }
 
     // #[reflect(hash)]
     fn parse_hash(&mut self, input: ParseStream) -> syn::Result<()> {
-        input.parse::<kw::hash>()?;
-        self.avail_traits.hash = true;
+        let s = input.parse::<kw::hash>()?.span;
+        self.avail_traits.hash = Some(s);
         Ok(())
     }
 
     // #[reflect(partial_eq)]
     fn parse_patrial_eq(&mut self, input: ParseStream) -> syn::Result<()> {
-        input.parse::<kw::partial_eq>()?;
-        self.avail_traits.partial_eq = true;
+        let s = input.parse::<kw::partial_eq>()?.span;
+        self.avail_traits.partial_eq = Some(s);
         Ok(())
     }
 
     // #[reflect(debug)]
     fn parse_debug(&mut self, input: ParseStream) -> syn::Result<()> {
-        input.parse::<kw::debug>()?;
-        self.avail_traits.debug = true;
+        let s = input.parse::<kw::debug>()?.span;
+        self.avail_traits.debug = Some(s);
         Ok(())
     }
 
     // #[reflect(serde)]
     fn parse_serde(&mut self, input: ParseStream) -> syn::Result<()> {
-        input.parse::<kw::serde>()?;
-        self.avail_traits.serialize = true;
-        self.avail_traits.deserialize = true;
+        let s = input.parse::<kw::serde>()?.span;
+        self.avail_traits.serialize = Some(s);
+        self.avail_traits.deserialize = Some(s);
+        self.auto_register = Some(s);
         Ok(())
     }
 
     // #[reflect(serialize)]
     fn parse_serialize(&mut self, input: ParseStream) -> syn::Result<()> {
-        input.parse::<kw::serialize>()?;
-        self.avail_traits.serialize = true;
+        let s = input.parse::<kw::serialize>()?.span;
+        self.avail_traits.serialize = Some(s);
         Ok(())
     }
 
     // #[reflect(deserialize)]
     fn parse_deserialize(&mut self, input: ParseStream) -> syn::Result<()> {
-        input.parse::<kw::deserialize>()?;
-        self.avail_traits.deserialize = true;
+        let s = input.parse::<kw::deserialize>()?.span;
+        self.avail_traits.deserialize = Some(s);
         Ok(())
     }
 
-    // #[reflect(opaque)]
+    // #[reflect(Opaque)]
     fn parse_opaque(&mut self, input: ParseStream) -> syn::Result<()> {
-        input.parse::<kw::opaque>()?;
-        self.is_opaque = true;
+        let s = input.parse::<kw::Opaque>()?.span;
+        self.is_opaque = Some(s);
         Ok(())
     }
 
     // #[reflect(auto_register)]
     fn parse_auto_register(&mut self, input: ParseStream) -> syn::Result<()> {
-        input.parse::<kw::auto_register>()?;
-        self.auto_register = true;
+        let s = input.parse::<kw::auto_register>()?.span;
+        self.auto_register = Some(s);
         Ok(())
     }
 

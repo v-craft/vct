@@ -1,8 +1,8 @@
 use alloc::string::String;
-use vct_reflect_derive::impl_full_reflect;
+use vct_reflect_derive::impl_reflect;
 
-impl_full_reflect!{
-    #[reflect(opaque, clone, default, hash, partial_eq, debug, serde)]
+impl_reflect!{
+    #[reflect(Opaque, full)]
     #[reflect(type_path = "alloc::string::String")]
     struct String;
 }

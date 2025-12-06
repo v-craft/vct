@@ -37,7 +37,7 @@ impl<'a> EnumVariant<'a> {
     pub fn active_fields(&self) -> impl Iterator<Item = &StructField<'a>> {
         self.fields()
             .iter()
-            .filter(|field| !field.attrs.ignore)
+            .filter(|field| !field.attrs.ignore.is_some())
     }
 
     /// Generates a `TokenStream` for `VariantInfo` construction.
@@ -98,6 +98,14 @@ impl<'a> ReflectEnum<'a> {
     /// Get an iterator of fields which are exposed to the reflection API
     pub fn active_fields(&self) -> impl Iterator<Item = &StructField<'a>> {
         self.variants.iter().flat_map(EnumVariant::active_fields)
+    }
+
+    /// Returns the given ident as a qualified unit variant of this enum.
+    pub fn variant_path(&self, variant: &Ident) -> proc_macro2::TokenStream {
+        let name = self.meta.type_path_parser().real_ident();
+        quote! {
+            #name::#variant
+        }
     }
 
     pub fn to_info_tokens(&self) -> proc_macro2::TokenStream {

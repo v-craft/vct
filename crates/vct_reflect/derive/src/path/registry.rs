@@ -1,12 +1,12 @@
 use proc_macro2::TokenStream;
 use quote::quote;
 
-#[inline]
-pub(crate) fn type_trait_(vct_reflect_path: &syn::Path) -> TokenStream { 
-    quote! {
-        #vct_reflect_path::registry::TypeTrait
-    }
-}
+// #[inline]
+// pub(crate) fn type_trait_(vct_reflect_path: &syn::Path) -> TokenStream { 
+//     quote! {
+//         #vct_reflect_path::registry::TypeTrait
+//     }
+// }
     
 #[inline]
 pub(crate) fn type_traits_(vct_reflect_path: &syn::Path) -> TokenStream {
@@ -36,12 +36,12 @@ pub(crate) fn type_registry_(vct_reflect_path: &syn::Path) -> TokenStream {
     }
 }
     
-#[inline]
-pub(crate) fn type_registry_arc_(vct_reflect_path: &syn::Path) -> TokenStream {
-    quote! {
-        #vct_reflect_path::registry::TypeRegistryArc
-    }
-}
+// #[inline]
+// pub(crate) fn type_registry_arc_(vct_reflect_path: &syn::Path) -> TokenStream {
+//     quote! {
+//         #vct_reflect_path::registry::TypeRegistryArc
+//     }
+// }
 
 #[inline]
 pub(crate) fn type_trait_default_(vct_reflect_path: &syn::Path) -> TokenStream {

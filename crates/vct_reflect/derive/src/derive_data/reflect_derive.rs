@@ -1,3 +1,4 @@
+use proc_macro2::Span;
 use syn::{DeriveInput, token::Comma, Fields, punctuated::Punctuated, spanned::Spanned, Variant};
 
 use crate::{
@@ -17,18 +18,9 @@ pub(crate) enum ReflectDerive<'a> {
 
 
 impl<'a> ReflectDerive<'a> {
-    pub fn meta(&self) -> &ReflectMeta<'a> {
-        match self {
-            ReflectDerive::Struct(reflect_struct) => reflect_struct.meta(),
-            ReflectDerive::TupleStruct(reflect_struct) => reflect_struct.meta(),
-            ReflectDerive::UnitStruct(reflect_meta) => reflect_meta,
-            ReflectDerive::Enum(reflect_enum) => reflect_enum.meta(),
-            ReflectDerive::Opaque(reflect_meta) => reflect_meta,
-        }
-    }
-
     pub fn from_input(input: &'a DeriveInput, source: ImplSourceKind) -> syn::Result<Self> {
         let type_attributes = TypeAttributes::parse_attrs(&input.attrs)?;
+        type_attributes.validity()?;
 
         // For local types, can use `module_path!()` to get the module path, 
         // but for foreign types, the user needs to explicitly provide it.
@@ -54,23 +46,13 @@ impl<'a> ReflectDerive<'a> {
 
         let meta = ReflectMeta::new(type_attributes, type_path);
 
-        if meta.attrs().is_opaque {
-            if meta.attrs().impl_switchs.impl_reflect
-                && !meta.attrs().avail_traits.clone
-            {
-                return Err(syn::Error::new(
-                    input.ident.span(), 
-                    "#[reflect(clone)] must be specified when auto impl `Reflect` for Opaque Type.",
-                ));
-            }
-
+        if meta.attrs().is_opaque.is_some() {
             return Ok(Self::Opaque(meta));
         }
 
         match &input.data {
             syn::Data::Struct(data_struct) => {
                 let fields = Self::colloct_struct_field(&data_struct.fields)?;
-
                 match data_struct.fields {
                     Fields::Named(..) => Ok(Self::Struct(ReflectStruct { meta, fields })),
                     Fields::Unnamed(..) => Ok(Self::TupleStruct(ReflectStruct { meta, fields })),
@@ -95,7 +77,7 @@ impl<'a> ReflectDerive<'a> {
         for (declaration_index, field) in fields.iter().enumerate() {
             let attrs = FieldAttributes::parse_attrs(&field.attrs)?;
 
-            let reflection_index = if attrs.ignore {
+            let reflection_index = if attrs.ignore.is_some() {
                 None
             } else {
                 active_index += 1;
@@ -114,6 +96,10 @@ impl<'a> ReflectDerive<'a> {
     }
 
     fn collect_enum_variants(variants: &'a Punctuated<Variant, Comma>) -> syn::Result<Vec<EnumVariant<'a>>> {
+        if variants.is_empty() {
+            return Err(syn::Error::new(Span::call_site(), "reflection macros do not support empty enum."));
+        }
+
         let mut res: Vec<EnumVariant<'a>> = Vec::with_capacity(variants.len());
 
         for variant in variants.iter() {
@@ -123,11 +109,17 @@ impl<'a> ReflectDerive<'a> {
                 Fields::Unnamed(..) => EnumVariantFields::Unnamed(fields),
                 Fields::Unit => EnumVariantFields::Unit,
             };
-            res.push(EnumVariant { 
+            let variant_item = EnumVariant { 
                 data: variant, 
                 fields: variant_fields, 
                 attrs: FieldAttributes::parse_attrs(&variant.attrs)?,
-            });
+            };
+
+            if let Some(span) = variant_item.attrs.ignore {
+                return Err(syn::Error::new(span, "`#[reflect(ignore)]` can only be used for fields and cannot be used for enum variants."));
+            }
+
+            res.push(variant_item);
         }
 
         Ok(res)

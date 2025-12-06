@@ -1,3 +1,4 @@
+use proc_macro2::Span;
 use syn::{Attribute, Meta, Token, MacroDelimiter, MetaList, parse::ParseStream, MetaNameValue};
 
 use crate::{
@@ -18,7 +19,7 @@ pub(crate) struct FieldAttributes {
     /// Custom docs: `///`, `#[doc = ""]` or `#[reflect(docs = "")]`
     pub docs: ReflectDocs,
     /// Determines how this field should be ignored if at all.
-    pub ignore: bool,
+    pub ignore: Option<Span>,
 }
 
 impl FieldAttributes {
@@ -93,8 +94,8 @@ impl FieldAttributes {
     }
 
     fn parse_ignore(&mut self, input: ParseStream) -> syn::Result<()> {
-        input.parse::<kw::ignore>()?;
-        self.ignore = true;
+        let s = input.parse::<kw::ignore>()?.span;
+        self.ignore = Some(s);
         Ok(())
     }
 }

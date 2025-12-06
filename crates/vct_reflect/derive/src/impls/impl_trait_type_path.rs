@@ -17,8 +17,6 @@ fn static_path_cell(vct_reflect_path: &syn::Path, generator: TokenStream) -> Tok
 }
 
 pub(crate) fn impl_trait_type_path(meta: &ReflectMeta) -> TokenStream {
-    debug_assert!(meta.attrs().impl_switchs.impl_type_path);
-
     let vct_reflect_path = meta.vct_reflect_path();
     let trait_type_path_ = crate::path::type_path_(vct_reflect_path);
 

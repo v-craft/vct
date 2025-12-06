@@ -7,8 +7,6 @@ use crate::info::FieldId;
 pub enum ReflectCloneError {
     /// The type does not have a custom implementation for [`crate::PartialReflect::reflect_clone`].
     NotImplemented { type_path: Cow<'static, str> },
-    /// The type cannot be cloned via [`crate::PartialReflect::reflect_clone`].
-    NotSupport { type_path: Cow<'static, str> },
     /// The field cannot be cloned via [`crate::PartialReflect::reflect_clone`].
     FieldNotCloneable {
         type_path: Cow<'static, str>,
@@ -22,9 +20,6 @@ impl fmt::Display for ReflectCloneError {
         match self {
             Self::NotImplemented { type_path } => {
                 write!(f, "`reflect_clone` not implemented for `{type_path}`")
-            },
-            Self::NotSupport { type_path } => {
-                write!(f, "`{type_path}` does not support `reflect_clone`")
             },
             Self::FieldNotCloneable {
                 type_path,

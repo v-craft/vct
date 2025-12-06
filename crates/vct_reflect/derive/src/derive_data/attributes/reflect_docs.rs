@@ -3,7 +3,7 @@
 use crate::path::fp::OptionFP;
 use proc_macro2::TokenStream;
 use quote::quote;
-use syn::{Expr, ExprLit, Lit, MetaNameValue, spanned::Spanned};
+use syn::{Expr, Lit, MetaNameValue, spanned::Spanned};
 
 
 /// A struct used to represent a type's documentation, if any.
@@ -38,9 +38,10 @@ impl ReflectDocs {
     ///
     /// Examples:
     /// - `#[doc = "..."]`
+    #[cfg(feature = "reflect_docs")]
     pub fn parse_default_docs(&mut self, pair: &MetaNameValue) -> syn::Result<()> {
         if self.enabled && !self.is_custom {
-            if let Expr::Lit(ExprLit {
+            if let Expr::Lit(syn::ExprLit {
                 lit: Lit::Str(lit_str), ..
             }) = &pair.value {
                 self.docs.push(lit_str.value());
@@ -120,12 +121,9 @@ impl ReflectDocs {
     /// .with_docs(::core::option::Option::Some("......"))
     /// ```
     pub fn get_expression_with(&self) -> TokenStream {
-        if let Some(doc) = self.doc_string() {
-            #[cfg(not(feature = "reflect_docs"))]
-            panic!("`ReflectDocs` is enabled but `reflect_docs` is disabled.");
-
+        if let Some(_doc) = self.doc_string() {
             quote! {
-                .with_docs(#OptionFP::Some(#doc))
+                .with_docs(#OptionFP::Some(#_doc))
             }
         } else {
             crate::utils::empty()

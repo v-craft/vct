@@ -79,6 +79,28 @@ impl StructField<'_> {
         }
     }
 
+    /// Get the field name for the `field` function of `Struct/TupleStruct`.
+    /// 
+    /// - Named fields return values similar to `"name"`.
+    /// - Unnamedfields return values similar to `2`.
+    pub fn reflect_accessor(&self) -> proc_macro2::TokenStream {
+        if self.attrs.ignore.is_some() {
+            panic!("Non-active fields cannot obtain reflect_accessor.");
+        }
+        match &self.data.ident {
+            Some(ident) => ident.to_string().to_token_stream(),
+            None => self.reflection_index.to_token_stream(),
+        }
+    }
+
+    /// Return the actual field string name.
+    pub fn field_name(&self) -> String {
+        match &self.data.ident {
+            Some(ident) => ident.clone().to_string(),
+            None => self.declaration_index.to_string(),
+        }
+    }
+
 }
 
 impl<'a> ReflectStruct<'a> {
@@ -96,18 +118,7 @@ impl<'a> ReflectStruct<'a> {
     pub fn active_fields(&self) -> impl Iterator<Item = &StructField<'a>> {
         self.fields()
             .iter()
-            .filter(|field| !field.attrs.ignore)
-    }
-
-    pub fn access_for_field(
-        &self,
-        field: &StructField<'a>,
-        is_mutable: bool,
-    ) -> proc_macro2::TokenStream {
-        let member = field.to_member();
-        let prefix_tokens = if is_mutable { quote!(&mut) } else { quote!(&) };
-
-        quote!(#prefix_tokens self.#member)
+            .filter(|field| field.attrs.ignore.is_none())
     }
 
     pub fn to_info_tokens(&self, is_tuple: bool) -> proc_macro2::TokenStream {
@@ -164,14 +175,12 @@ pub(crate) struct FieldAccessors {
 }
 
 impl FieldAccessors {
-    pub fn new(reflect_struct: &ReflectStruct) -> Self {
-        let (fields_ref, fields_mut): (Vec<_>, Vec<_>) = reflect_struct
+    pub fn new(info: &ReflectStruct) -> Self {
+        let (fields_ref, fields_mut): (Vec<_>, Vec<_>) = info
             .active_fields()
             .map(|field| {
-                (
-                    reflect_struct.access_for_field(field, false),
-                    reflect_struct.access_for_field(field, true),
-                )
+                let member = field.to_member();
+                ( quote!(&self.#member), quote!(&mut self.#member) )
             })
             .unzip();
 

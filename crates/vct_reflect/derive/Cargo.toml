@@ -7,7 +7,7 @@ edition = "2024"
 proc-macro = true
 
 [features]
-default = ["reflect_docs", "auto_register"]
+default = []
 
 reflect_docs = []
 

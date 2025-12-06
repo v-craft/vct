@@ -5,8 +5,9 @@ use crate::{
     ops::{ApplyError, ReflectMut, ReflectOwned, ReflectRef},
     reflect::impl_cast_reflect_fn,
 };
-use alloc::{borrow::Cow, boxed::Box, string::ToString, vec::Vec};
+use alloc::{borrow::Cow, boxed::Box, vec::Vec};
 use core::fmt;
+use std::borrow::ToOwned;
 use vct_utils::collections::HashMap;
 
 /// Represents a [`Struct`], used to dynamically modify data and its reflected type information.
@@ -248,7 +249,7 @@ pub trait Struct: Reflect {
         let mut dynamic_struct = DynamicStruct::with_capacity(self.field_len());
         dynamic_struct.set_type_info(self.represented_type_info());
         for (i, val) in self.iter_fields().enumerate() {
-            dynamic_struct.insert_boxed(self.name_at(i).unwrap().to_string(), val.to_dynamic());
+            dynamic_struct.insert_boxed(self.name_at(i).unwrap().to_owned(), val.to_dynamic());
         }
         dynamic_struct
     }

@@ -6,7 +6,7 @@ use crate::{
     reflect::impl_cast_reflect_fn,
 };
 use alloc::{boxed::Box, vec::Vec};
-use core::fmt;
+use core::{fmt, hash::Hash};
 
 /// Represents a [`Tuple`], used to dynamically modify data and its reflected type information.
 ///
@@ -390,6 +390,20 @@ pub fn tuple_partial_eq(x: &dyn Tuple, y: &dyn Reflect) -> Option<bool> {
     }
     Some(true)
 }
+
+/// A function used to assist in the implementation of `reflect_hash`
+///
+/// Avoid compilation overhead when implementing multiple types.
+#[inline(never)]
+pub fn tuple_hash(x: &dyn Tuple) -> Option<u64> {
+    let mut hasher = crate::reflect_hasher();
+    x.type_id().hash(&mut hasher);
+    for field in x.iter_fields() {
+        field.reflect_hash()?.hash(&mut hasher);
+    }
+    Some(core::hash::Hasher::finish(&hasher))
+}
+
 
 /// The default debug formatter for [`Tuple`] types.
 ///

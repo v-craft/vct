@@ -1,3 +1,5 @@
+use proc_macro2::Span;
+
 
 /// A struct used to control whether a trait needs to be implemented.
 #[derive(Clone)]
@@ -49,13 +51,13 @@ impl Default for TraitImplSwitches {
 
 #[derive(Clone, Default)]
 pub(crate) struct TraitAvailableFlags {
-    pub default: bool,
-    pub clone: bool,
-    pub debug: bool,
-    pub hash: bool,
-    pub partial_eq: bool,
-    pub serialize: bool,
-    pub deserialize: bool,
+    pub default: Option<Span>,
+    pub clone: Option<Span>,
+    pub debug: Option<Span>,
+    pub hash: Option<Span>,
+    pub partial_eq: Option<Span>,
+    pub serialize: Option<Span>,
+    pub deserialize: Option<Span>,
 }
 
 

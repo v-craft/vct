@@ -3,8 +3,6 @@ use quote::quote;
 use crate::derive_data::ReflectMeta;
 
 pub(crate) fn impl_trait_typed(meta: &ReflectMeta, type_info_tokens: TokenStream) -> TokenStream {
-    debug_assert!(meta.attrs().impl_switchs.impl_typed);
-
     let vct_reflect_path = meta.vct_reflect_path();
     let trait_typed_ = crate::path::typed_(vct_reflect_path);
     let type_info_ = crate::path::type_info_(vct_reflect_path);
